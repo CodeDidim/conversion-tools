@@ -1,0 +1,4 @@
+STM32_IP: "192.168.10.25"
+TEST_ENVIRONMENT: "hardware"
+ORGANIZATION_NAME: "CompanyX"
+ENGINEER_EMAIL: "john.doe@companyX.com"

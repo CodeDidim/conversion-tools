@@ -46,13 +46,15 @@ def replace_tokens(base_dir: Path, mapping: Dict[str, str]) -> None:
         for name in files:
             path = Path(root) / name
             if path.suffix in TEXT_EXTENSIONS:
-                text = path.read_text()
+                # Force UTF-8 decoding so the script behaves the same on
+                # Windows and Linux irrespective of the active locale.
+                text = path.read_text(encoding="utf-8")
                 new_text = text
                 for key, value in mapping.items():
                     token = f"{{{{ {key} }}}}"
                     new_text = new_text.replace(token, value)
                 if new_text != text:
-                    path.write_text(new_text)
+                    path.write_text(new_text, encoding="utf-8")
 
 
 def inject_context(src: Path, dst: Path, profile: Path, overlay: Optional[Path] = None) -> None:

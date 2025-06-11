@@ -5,7 +5,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-TEXT_EXTENSIONS = {".py", ".robot", ".yaml", ".md"}
+TEXT_EXTENSIONS = {
+    ".py", ".robot", ".yaml", ".md", ".txt",
+    ".toml", ".sh", ".ps1", ".yml",
+    ".gitignore", ".dockerignore", ".in", ".example",
+    ".validate", ".excalidraw",
+}
 
 LOG_DIR = Path("log")
 
@@ -98,7 +103,7 @@ def inject_context(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inject private context")
+    parser = argparse.ArgumentParser(description="Apply template context")
     parser.add_argument("src", type=Path, help="Generic project directory")
     parser.add_argument("dst", type=Path, help="Destination directory")
     parser.add_argument("profile", type=Path, help="YAML profile with values")
@@ -109,7 +114,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    log_file = get_log_file("inject")
+    log_file = get_log_file("apply")
     inject_context(args.src, args.dst, args.profile, args.overlay, log_file=log_file, verbose=args.verbose)
 
 

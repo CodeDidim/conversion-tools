@@ -8,7 +8,7 @@ from pathlib import Path
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.inject_private_context import get_log_file, write_log
+from scripts.apply_template_context import get_log_file, write_log
 
 KEYWORDS = [
     "YourCompany",
@@ -17,7 +17,12 @@ KEYWORDS = [
     "embedded-test-team@",
 ]
 
-TEXT_EXTENSIONS = {".py", ".robot", ".yaml", ".md"}
+TEXT_EXTENSIONS = {
+    ".py", ".robot", ".yaml", ".md", ".txt",
+    ".toml", ".sh", ".ps1", ".yml",
+    ".gitignore", ".dockerignore", ".in", ".example",
+    ".validate", ".excalidraw",
+}
 
 
 def should_filter_line(line: str) -> bool:

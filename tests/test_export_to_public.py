@@ -31,8 +31,8 @@ def test_export_directory_cleans_and_copies(tmp_path):
     py_lines = (dst / "file.py").read_text().splitlines()
     assert py_lines == ["hello", "world"]
 
-    # Non text file copied verbatim
-    assert (dst / "file.txt").read_text() == "private @company.com\n"
+    # Text file cleaned
+    assert (dst / "file.txt").read_text() == ""
 
     # Nested yaml cleaned
     yaml_lines = (dst / "nested" / "config.yaml").read_text().splitlines()

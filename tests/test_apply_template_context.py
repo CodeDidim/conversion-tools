@@ -42,3 +42,18 @@ def test_inject_context_without_overlay(tmp_path):
     inject_context(src, dst, profile)
 
     assert (dst / "file.md").read_text() == "use data\n"
+
+
+def test_inject_context_token_no_spaces(tmp_path):
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+
+    (src / "file.txt").write_text("var={{VALUE}}\n")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("VALUE: 42\n")
+
+    inject_context(src, dst, profile)
+
+    assert (dst / "file.txt").read_text() == "var=42\n"

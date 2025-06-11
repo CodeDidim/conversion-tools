@@ -1,0 +1,4 @@
+STM32_IP: "192.168.10.25"
+TEST_ENVIRONMENT: "public Test environment"
+ORGANIZATION_NAME: "Public ACME Company"
+ENGINEER_EMAIL: "avarel_dalton@public_company.com"

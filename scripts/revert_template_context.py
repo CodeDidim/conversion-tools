@@ -6,19 +6,24 @@ from pathlib import Path
 from typing import Dict
 
 # Allow running this script directly by ensuring the repository root is on
-# ``sys.path`` when executed as ``python scripts/revert_private_context.py``.
+# ``sys.path`` when executed as ``python scripts/revert_template_context.py``.
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-from scripts.inject_private_context import (
+from scripts.apply_template_context import (
     load_profile,
     copy_project,
     get_log_file,
     write_log,
 )
 
-TEXT_EXTENSIONS = {".py", ".robot", ".yaml", ".md"}
+TEXT_EXTENSIONS = {
+    ".py", ".robot", ".yaml", ".md", ".txt",
+    ".toml", ".sh", ".ps1", ".yml",
+    ".gitignore", ".dockerignore", ".in", ".example",
+    ".validate", ".excalidraw",
+}
 
 
 def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
@@ -64,7 +69,7 @@ def revert_context(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Revert private context")
+    parser = argparse.ArgumentParser(description="Revert template context")
     parser.add_argument("src", type=Path, help="Private project directory")
     parser.add_argument("dst", type=Path, help="Destination directory")
     parser.add_argument("profile", type=Path, help="YAML profile with values")

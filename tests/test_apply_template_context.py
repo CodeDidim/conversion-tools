@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.inject_private_context import inject_context
+from scripts.apply_template_context import inject_context
 
 
 def test_inject_context_with_overlay(tmp_path):
@@ -24,7 +24,7 @@ def test_inject_context_with_overlay(tmp_path):
     inject_context(src, dst, profile, overlay)
 
     assert (dst / "config.yaml").read_text() == "ip: 10.0.0.1\n"
-    assert (dst / "notes.txt").read_text() == "token {{ STM32_IP }}\n"
+    assert (dst / "notes.txt").read_text() == "token 10.0.0.1\n"
     assert (dst / "README.md").read_text() == "Overlay host example.com\n"
     assert (dst / "extra.py").read_text() == "ADDR='10.0.0.1'\n"
 

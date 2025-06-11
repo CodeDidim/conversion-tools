@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.inject_private_context import inject_context
-from scripts.revert_private_context import revert_context
+from scripts.apply_template_context import inject_context
+from scripts.revert_template_context import revert_context
 
 
 def test_roundtrip_revert(tmp_path):

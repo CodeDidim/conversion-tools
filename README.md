@@ -7,7 +7,7 @@ validate that no sensitive information remains.
 
 ## Scripts
 
-### `inject_private_context.py`
+### `apply_template_context.py`
 
 Copies a generic project to a new location and replaces `{{ KEY }}`
 placeholders using values from a YAML profile.  An optional overlay
@@ -17,19 +17,19 @@ directory and an optional `--verbose` flag prints those log lines to the
 screen.
 
 ```
-python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>] [--verbose]
+python scripts/apply_template_context.py <src> <dst> <profile> [--overlay <dir>] [--verbose]
 ```
 
-### `revert_private_context.py`
+### `revert_template_context.py`
 
 Copies a private project to a new location and replaces private values with
 their original `{{ KEY }}` placeholders using the same YAML profile.  The
 replacement now uses regular expressions with word boundaries to avoid
 matching partial words.  Logging behaviour mirrors that of
-`inject_private_context.py`, writing to `log/` and supporting `--verbose`.
+`apply_template_context.py`, writing to `log/` and supporting `--verbose`.
 
 ```
-python scripts/revert_private_context.py <src> <dst> <profile> [--verbose]
+python scripts/revert_template_context.py <src> <dst> <profile> [--verbose]
 ```
 
 ### `export_to_public.py`
@@ -58,7 +58,7 @@ python scripts/validate_public_repo.py
 
 Example YAML profiles can be found under `scripts/config_profiles/`.
 They map placeholder names to actual values used by
-`inject_private_context.py`.
+`apply_template_context.py`.
 
 ## Running Tests
 

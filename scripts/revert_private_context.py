@@ -1,8 +1,14 @@
 import argparse
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Dict
+
+# Allow running this script directly by ensuring the repository root is on
+# ``sys.path`` when executed as ``python scripts/revert_private_context.py``.
+if __package__ is None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 from scripts.inject_private_context import (

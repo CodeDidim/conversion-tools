@@ -21,7 +21,9 @@ python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>]
 ### `revert_private_context.py`
 
 Copies a private project to a new location and replaces private values with
-their original `{{ KEY }}` placeholders using the same YAML profile.
+their original `{{ KEY }}` placeholders using the same YAML profile.  The
+replacement now uses regular expressions with word boundaries to avoid
+matching partial words.
 
 ```
 python scripts/revert_private_context.py <src> <dst> <profile>

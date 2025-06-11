@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from pathlib import Path
 from typing import Dict
 
@@ -10,6 +11,10 @@ TEXT_EXTENSIONS = {".py", ".robot", ".yaml", ".md"}
 
 def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str]) -> None:
     """Replace private values with ``{{ KEY }}`` tokens in text files."""
+    patterns = {
+        key: re.compile(r"\b" + re.escape(value) + r"\b")
+        for key, value in mapping.items()
+    }
     for root, _, files in os.walk(base_dir):
         for name in files:
             path = Path(root) / name
@@ -18,7 +23,8 @@ def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str]) -> None:
                 new_text = text
                 for key, value in mapping.items():
                     token = f"{{{{ {key} }}}}"
-                    new_text = new_text.replace(value, token)
+                    pattern = patterns[key]
+                    new_text = pattern.sub(token, new_text)
                 if new_text != text:
                     path.write_text(new_text, encoding="utf-8")
 

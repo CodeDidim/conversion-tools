@@ -22,3 +22,17 @@ def test_roundtrip_revert(tmp_path):
 
     revert_context(private, public, profile)
     assert (public / "app.py").read_text() == "user={{ USER }}\n"
+
+
+def test_no_partial_word_replacement(tmp_path):
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    private.mkdir()
+
+    (private / "app.md").write_text("admin badmington\n")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("USER: admin\n")
+
+    revert_context(private, public, profile)
+    assert (public / "app.md").read_text() == "{{ USER }} badmington\n"

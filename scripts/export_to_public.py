@@ -1,7 +1,12 @@
 import argparse
 import os
 import shutil
+import sys
 from pathlib import Path
+
+# Ensure this script works when executed directly from the ``scripts`` folder.
+if __package__ is None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.inject_private_context import get_log_file, write_log
 

@@ -12,10 +12,12 @@ validate that no sensitive information remains.
 Copies a generic project to a new location and replaces `{{ KEY }}`
 placeholders using values from a YAML profile.  An optional overlay
 folder can be provided to apply company‑specific files on top of the
-base project.
+base project.  Every run writes a timestamped log file to the `log/`
+directory and an optional `--verbose` flag prints those log lines to the
+screen.
 
 ```
-python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>]
+python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>] [--verbose]
 ```
 
 ### `revert_private_context.py`
@@ -23,20 +25,23 @@ python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>]
 Copies a private project to a new location and replaces private values with
 their original `{{ KEY }}` placeholders using the same YAML profile.  The
 replacement now uses regular expressions with word boundaries to avoid
-matching partial words.
+matching partial words.  Logging behaviour mirrors that of
+`inject_private_context.py`, writing to `log/` and supporting `--verbose`.
 
 ```
-python scripts/revert_private_context.py <src> <dst> <profile>
+python scripts/revert_private_context.py <src> <dst> <profile> [--verbose]
 ```
 
 ### `export_to_public.py`
 
 Walks a directory tree and copies files to a target location while
 removing lines that contain private keywords such as company names or
-internal e‑mail addresses.  Non‑text files are copied verbatim.
+internal e‑mail addresses.  Non‑text files are copied verbatim.  Each
+run writes a log to the `log/` directory and accepts a `--verbose` flag
+to echo log lines to the console.
 
 ```
-python scripts/export_to_public.py <src> <dst>
+python scripts/export_to_public.py <src> <dst> [--verbose]
 ```
 
 ### `validate_public_repo.py`

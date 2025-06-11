@@ -1,0 +1,21 @@
+# Example workflow configuration for company environment
+visibility_server:
+  url: "http://your-home-public-ip:8888"  # Or use Cloudflare tunnel URL
+  webhook_secret: "same-secret-as-home-config"
+
+public_remote: "https://github.com/USERNAME/REPO.git"
+private_remote: "ssh://git@company-git-server:2222/private-repo.git"
+
+emergency:
+  company_backup_remote: "ssh://git@internal-backup:2222/backup.git"
+  contact_methods:
+    - "Slack: @your-home-username"
+    - "Email: your-personal@email.com"
+    - "Teams: @yourname"
+
+profile: "scripts/config_profiles/company_profile.yaml"
+overlay_dir: "private-overlay"
+public_branch: "main"
+private_branch: "private/main"
+temp_dir: ".workflow-temp"
+mode_file: ".current-mode"

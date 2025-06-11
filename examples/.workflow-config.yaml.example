@@ -1,0 +1,22 @@
+# Example workflow configuration for home environment
+github:
+  owner: "YOUR_GITHUB_USERNAME"
+  repo: "your-repository-name"
+  token_env: "GITHUB_TOKEN"
+  public_url: "https://github.com/YOUR_GITHUB_USERNAME/your-repository-name.git"
+
+company_git:
+  url: "ssh://git@company-server:2222/private-repo.git"
+
+visibility_server:
+  port: 8888
+  webhook_secret: "generate-a-strong-secret-key-here-at-least-32-chars"
+  auto_hide_minutes: 15
+  allowed_ips: []  # Empty allows all, or add specific IPs like ["203.0.113.0/24"]
+
+profile: "scripts/config_profiles/company_profile.yaml"
+overlay_dir: "private-overlay"
+public_branch: "main"
+private_branch: "private/main"
+temp_dir: ".workflow-temp"
+mode_file: ".current-mode"

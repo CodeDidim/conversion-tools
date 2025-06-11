@@ -1,0 +1,35 @@
+# Company-specific values to inject into templates
+# Replace these with your actual company values
+
+# Company Information
+COMPANY_NAME: "ACME Corporation"
+COMPANY_EMAIL: "dev@acme.com"
+COMPANY_DOMAIN: "acme.com"
+
+# Infrastructure
+COMPANY_SERVER: "10.0.1.100"
+COMPANY_PORT: "8080"
+INTERNAL_URL: "https://internal.acme.com"
+PRIVATE_REGISTRY: "registry.acme.local:5000"
+
+# Database Configuration
+DB_HOST: "db.acme.internal"
+DB_PORT: "5432"
+DB_NAME: "acme_production"
+DB_USER: "acme_user"
+DB_PASS: "super-secret-password"
+
+# API Keys and Credentials
+API_KEY: "sk-acme-1234567890abcdef"
+LICENSE_KEY: "ACME-PRO-2024-XXXX-XXXX"
+AUTH_TOKEN: "token-1234567890"
+
+# Service Endpoints
+AUTH_SERVICE: "https://auth.acme.internal"
+LOG_SERVICE: "https://logs.acme.internal"
+METRICS_ENDPOINT: "https://metrics.acme.internal:9090"
+
+# Environment-specific values
+ENV_NAME: "production"
+DEBUG_MODE: "false"
+LOG_LEVEL: "INFO"

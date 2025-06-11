@@ -22,7 +22,7 @@ TEXT_EXTENSIONS = {
     ".py", ".robot", ".yaml", ".md", ".txt",
     ".toml", ".sh", ".ps1", ".yml",
     ".gitignore", ".dockerignore", ".in", ".example",
-    ".validate", ".excalidraw",
+    ".validate", ".excalidraw", ".log",
 }
 
 

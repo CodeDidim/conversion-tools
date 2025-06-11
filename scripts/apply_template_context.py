@@ -23,6 +23,7 @@ TEXT_EXTENSIONS = {
     ".example",
     ".validate",
     ".excalidraw",
+    ".log",
 }
 
 LOG_DIR = Path("log")

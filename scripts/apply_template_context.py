@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -76,6 +77,10 @@ def overlay_files(overlay_dir: Path, target_dir: Path) -> None:
 
 def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
     """Replace ``{{ KEY }}`` tokens in text files under ``base_dir``."""
+    patterns = {
+        key: re.compile(r"\{\{\s*" + re.escape(key) + r"\s*\}\}")
+        for key in mapping
+    }
     for root, dirs, files in os.walk(base_dir):
         for name in files:
             path = Path(root) / name
@@ -86,10 +91,14 @@ def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verb
                 for i, line in enumerate(lines):
                     original = line
                     for key, value in mapping.items():
-                        token = f"{{{{ {key} }}}}"
-                        if token in line:
-                            line = line.replace(token, value)
-                            write_log(f"{path}:{i+1} {token} -> {value}", log_file, verbose)
+                        pattern = patterns[key]
+                        if pattern.search(line):
+                            line = pattern.sub(value, line)
+                            write_log(
+                                f"{path}:{i+1} {{{{ {key} }}}} -> {value}",
+                                log_file,
+                                verbose,
+                            )
                     if line != original:
                         lines[i] = line
                         changed = True

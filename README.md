@@ -10,7 +10,8 @@ validate that no sensitive information remains.
 ### `apply_template_context.py`
 
 Copies a generic project to a new location and replaces `{{ KEY }}`
-placeholders using values from a YAML profile.  An optional overlay
+placeholders using values from a YAML profile. Tokens can include optional
+whitespace, so both `{{KEY}}` and `{{ KEY }}` forms are replaced. An optional overlay
 folder can be provided to apply company‑specific files on top of the
 base project.  Every run writes a timestamped log file to the `log/`
 directory and an optional `--verbose` flag prints those log lines to the

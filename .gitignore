@@ -1,2 +1,50 @@
-__pycache__/
 .pytest_cache/
+# Workflow Configuration
+.workflow-config.yaml
+.workflow-config-company.yaml
+.current-mode
+.workflow-temp/
+
+# Security-sensitive scripts
+workflow.py
+workflow-company.py
+visibility-server.py
+
+# Private configuration
+conversion-tools/scripts/config_profiles/company_profile.yaml
+conversion-tools/private-overlay/
+
+# Logs
+*.log
+log/
+logs/
+visibility-server.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Temporary
+*.tmp
+*.bak
+*.orig
+*.patch

@@ -1,0 +1,24 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.inject_private_context import inject_context
+from scripts.revert_private_context import revert_context
+
+
+def test_roundtrip_revert(tmp_path):
+    generic = tmp_path / "generic"
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    generic.mkdir()
+
+    (generic / "app.py").write_text("user={{ USER }}\n")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("USER: admin\n")
+
+    inject_context(generic, private, profile)
+    assert (private / "app.py").read_text() == "user=admin\n"
+
+    revert_context(private, public, profile)
+    assert (public / "app.py").read_text() == "user={{ USER }}\n"

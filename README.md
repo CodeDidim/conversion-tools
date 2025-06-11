@@ -18,6 +18,15 @@ base project.
 python scripts/inject_private_context.py <src> <dst> <profile> [--overlay <dir>]
 ```
 
+### `revert_private_context.py`
+
+Copies a private project to a new location and replaces private values with
+their original `{{ KEY }}` placeholders using the same YAML profile.
+
+```
+python scripts/revert_private_context.py <src> <dst> <profile>
+```
+
 ### `export_to_public.py`
 
 Walks a directory tree and copies files to a target location while

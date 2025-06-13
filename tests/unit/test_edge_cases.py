@@ -57,7 +57,10 @@ class TestEdgeCases:
         src.mkdir()
         real.rename(src / "real.txt")
         link = src / "link.txt"
-        link.symlink_to("real.txt")
+        try:
+            link.symlink_to("real.txt")
+        except (OSError, NotImplementedError):  # pragma: no cover - Windows
+            pytest.skip("symlinks not supported")
 
         profile = tmp_path / "profile.yaml"
         profile.write_text("API_KEY: 123\n")

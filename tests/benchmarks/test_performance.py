@@ -1,7 +1,12 @@
 import sys
 import time
 from pathlib import Path
-import resource
+
+try:
+    import resource
+except ImportError:  # pragma: no cover - Windows
+    resource = None
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -23,6 +28,7 @@ def test_large_repository_conversion_time(tmp_path):
     assert duration < 5
 
 
+@pytest.mark.skipif(resource is None, reason="resource module not available")
 def test_memory_usage_during_conversion(tmp_path):
     """Ensure memory usage stays reasonable"""
     src = tmp_path / "src"

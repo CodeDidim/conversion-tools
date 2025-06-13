@@ -17,6 +17,10 @@ TOKEN_PATTERNS = [
     r"token\s+[\w-]+",
     r"api[_-]?key\s*=\s*\S+",
     r"secret\s*=\s*\S+",
+    r"password\s*[=:]\s*\S+",
+    r"aws_secret_access_key\s*=\s*\S+",
+    r"-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----",
+    r"ssh-rsa\s+[A-Za-z0-9+/]+",
 ]
 
 

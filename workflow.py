@@ -6,6 +6,7 @@ from scripts.apply_template_context import inject_context, load_profile
 from scripts.revert_template_context import revert_context
 from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
+from scripts.manage_logs import cleanup_logs
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
 
@@ -99,6 +100,7 @@ def main() -> None:
     roll.add_argument("--to", type=str)
     roll.add_argument("--steps", type=int)
     roll.add_argument("--dry-run", action="store_true")
+    sub.add_parser("clean-logs", help="Clean up old log files")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -109,6 +111,8 @@ def main() -> None:
         public_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "rollback":
         _rollback_cli(args)
+    elif args.command == "clean-logs":
+        cleanup_logs(Path("log"), 30)
 
 
 if __name__ == "__main__":

@@ -66,6 +66,14 @@ python scripts/github_visibility.py hide   # make private
 python scripts/github_visibility.py unhide # make public
 ```
 
+### `manage_logs.py`
+
+Removes old `.log` files from the `log/` directory. Specify the age in days.
+
+```
+python scripts/manage_logs.py --cleanup --days 30
+```
+
 ## Configuration Profiles
 
 Example YAML profiles can be found under `scripts/config_profiles/`.

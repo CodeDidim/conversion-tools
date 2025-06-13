@@ -49,12 +49,11 @@ git push origin main
 ## 📁 Configuration
 Create `.workflow-config.yaml`:
 ```yaml
-github:
-  owner: "yourusername"
-  repo: "your-repo"
-  token_env: "GITHUB_TOKEN"
-
+owner: "yourusername"
+repo: "your-repo"
 profile: "scripts/config_profiles/company_profile.yaml"
+temp_dir: ".workflow-temp"
+template: "template"
 ```
 
 ## 🔒 Security Best Practices

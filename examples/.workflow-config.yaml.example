@@ -1,5 +1,6 @@
-# Simplified .workflow-config.yaml
-github:
-  owner: "USERNAME"
-  repo: "REPO"
-  # No token needed at company!
+# Simplified .workflow-config.yaml using a flat structure
+owner: "USERNAME"
+repo: "REPO"
+profile: "scripts/config_profiles/company_profile.yaml"
+temp_dir: ".workflow-temp"
+template: "template"

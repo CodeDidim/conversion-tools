@@ -4,7 +4,7 @@ import sys
 import subprocess
 import os
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.apply_template_context import inject_context
 from scripts.revert_template_context import revert_context
 from scripts.export_to_public import export_directory
@@ -191,7 +191,7 @@ class TestIntegrationScenarios:
 
     def test_cli_error_scenarios(self, tmp_path):
         """Test command-line interface error handling."""
-        script_path = Path(__file__).parent.parent / "scripts" / "apply_template_context.py"
+        script_path = Path(__file__).resolve().parents[2] / "scripts" / "apply_template_context.py"
 
         # Test with non-existent source
         result = subprocess.run(

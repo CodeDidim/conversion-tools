@@ -1,0 +1,5 @@
+stateDiagram-v2
+    state "public" as Public
+    state "private" as Private
+    Public --> Private: private_workflow
+    Private --> Public: public_workflow

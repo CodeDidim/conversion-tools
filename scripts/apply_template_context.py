@@ -7,7 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-import yaml
+try:
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    yaml = None
 
 # Ensure this script works when executed directly from the ``scripts`` folder.
 if __package__ is None:
@@ -40,11 +43,14 @@ def load_profile(path: Path) -> Dict[str, str]:
 
     content = path.read_text(encoding="utf-8")
 
-    try:
-        data = yaml.safe_load(content) or {}
-    except yaml.YAMLError:
-        # Fallback to the previous very simple parser for backward
-        # compatibility with config files that are not valid YAML.
+    data = None
+    if yaml is not None:
+        try:
+            data = yaml.safe_load(content) or {}
+        except yaml.YAMLError:
+            data = None
+
+    if data is None:
         data = {}
         for lineno, line in enumerate(content.splitlines(), 1):
             line = line.split("#", 1)[0].strip()
@@ -68,7 +74,7 @@ def load_profile(path: Path) -> Dict[str, str]:
         if not isinstance(data, dict):
             raise ValueError(
                 f"❌ Profile {path} must contain a mapping\n"
-                "Verify the YAML structure or regenerate the profile from examples." 
+                "Verify the YAML structure or regenerate the profile from examples."
             )
         for key, value in list(data.items()):
             if not isinstance(key, str):
@@ -111,7 +117,7 @@ def overlay_files(
                     continue
 
                 dst_path.parent.mkdir(parents=True, exist_ok=True)
-                dst_path.symlink_to(src_path.readlink())
+                dst_path.symlink_to(os.readlink(src_path))
             else:
                 dst_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src_path, dst_path)

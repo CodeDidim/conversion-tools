@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
+import yaml
+
 # Ensure this script works when executed directly from the ``scripts`` folder.
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -32,20 +34,27 @@ def write_log(message: str, log_file: Path, verbose: bool) -> None:
 
 
 def load_profile(path: Path) -> Dict[str, str]:
-    """Load a very simple YAML file mapping keys to string values."""
-    data: Dict[str, str] = {}
+    """Load YAML profile using proper YAML parser."""
     if not path.exists():
+        return {}
+
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+
+        if not isinstance(data, dict):
+            raise ValueError(f"Profile {path} must contain a mapping")
+
+        for key, value in list(data.items()):
+            if not isinstance(key, str):
+                raise ValueError(f"Profile key must be string, got {type(key)}")
+            if not isinstance(value, str):
+                data[key] = str(value)
+
         return data
-    with path.open("r") as f:
-        for line in f:
-            line = line.split("#", 1)[0].strip()
-            if not line:
-                continue
-            if ":" not in line:
-                continue
-            key, value = line.split(":", 1)
-            data[key.strip()] = value.strip().strip("'\"")
-    return data
+
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML in profile {path}: {e}")
 
 
 def copy_project(src: Path, dst: Path) -> None:

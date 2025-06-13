@@ -46,15 +46,28 @@ def pull_repo(cfg: dict, force: bool = False) -> None:
     owner = cfg.get("github.owner")
     repo = cfg.get("github.repo")
     if not owner or not repo:
-        raise SystemExit("github.owner and github.repo must be set in config")
+        raise SystemExit(
+            "❌ github.owner and github.repo must be set in config\n"
+            "\n"
+            "Run 'workflow.py init' to generate a default configuration or copy\n"
+            "examples/.workflow-config-company.yaml.example and edit owner/repo."
+        )
 
     if not force:
         if not repo_is_public(owner, repo):
             raise SystemExit(
-                "Repository is private. Please make it public using your phone"
+                "❌ Repository is private\n"
+                "\n"
+                "Make the GitHub repository public before pulling.\n"
+                "You can unhide it using:\n"
+                "    python scripts/github_visibility.py unhide\n"
+                "Or run with --force to skip this check."
             )
         if not confirm("Repository is public. Continue with git pull?"):
-            raise SystemExit("Pull cancelled")
+            raise SystemExit(
+                "❌ Pull cancelled\n"
+                "Run 'workflow_company.py pull --force' to bypass confirmation."
+            )
 
     subprocess.run(["git", "pull"], check=True)
 

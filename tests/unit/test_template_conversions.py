@@ -88,6 +88,6 @@ class TestTemplateConversions:
         src.mkdir()
         (src / "file.txt").write_text("A={{ A }}")
         profile = tmp_path / "p.yaml"
-        profile.write_text("A: {{ A }}-done")
+        profile.write_text("A: '{{ A }}-done'")
         inject_context(src, dst, profile)
         assert (dst / "file.txt").read_text() == "A={{ A }}-done"

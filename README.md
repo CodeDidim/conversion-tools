@@ -72,6 +72,10 @@ python workflow.py rollback
 ```bash
 python workflow.py clean-logs
 ```
+- Check repository visibility:
+```bash
+python workflow.py status  # or workflow_company.py status
+```
 
 ![Workflow Diagram](docs/diagrams/manual-workflow.mermaid)
 

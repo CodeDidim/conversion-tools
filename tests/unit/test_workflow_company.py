@@ -3,6 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import workflow_company
+import workflow
 
 
 def test_company_private(tmp_path):
@@ -38,8 +39,19 @@ def test_company_dry_run(tmp_path):
 def test_company_repo_status(monkeypatch):
     cfg = {"github.owner": "o", "github.repo": "r"}
 
-    monkeypatch.setattr(workflow_company, "repo_is_public", lambda o, r: True)
+    monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: True)
     assert workflow_company.repo_status(cfg) == "public"
 
-    monkeypatch.setattr(workflow_company, "repo_is_public", lambda o, r: False)
+    monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: False)
+    assert workflow_company.repo_status(cfg) == "private"
+
+
+def test_company_repo_status_nested(monkeypatch):
+    cfg = {"github": {"owner": "o", "repo": "r"}}
+
+    monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: True)
+    assert workflow_company.repo_status(cfg) == "public"
+
+    monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: False)
+
     assert workflow_company.repo_status(cfg) == "private"

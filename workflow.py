@@ -95,8 +95,14 @@ def repo_is_public(owner: str, repo: str) -> bool:
 
 def repo_status(cfg: dict) -> str:
     """Return 'public' or 'private' based on GitHub visibility."""
-    owner = cfg.get("github.owner") or cfg.get("github", {}).get("owner")
-    repo = cfg.get("github.repo") or cfg.get("github", {}).get("repo")
+
+    owner = cfg.get("github.owner")
+    repo = cfg.get("github.repo")
+    github = cfg.get("github")
+    if isinstance(github, dict):
+        owner = owner or github.get("owner")
+        repo = repo or github.get("repo")
+
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"

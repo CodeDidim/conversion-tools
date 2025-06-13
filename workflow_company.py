@@ -29,12 +29,12 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
 
 def repo_is_public(owner: str, repo: str) -> bool:
     """Return True if the GitHub repo is public."""
-    url = f"https://api.github.com/repos/{owner}/{repo}"
-    req = request.Request(url, method="GET")
-    req.add_header("Accept", "application/vnd.github+json")
-    with request.urlopen(req) as resp:
-        data = json.load(resp)
-    return not data.get("private", True)
+    return home.repo_is_public(owner, repo)
+
+
+def repo_status(cfg: dict) -> str:
+    """Return 'public' or 'private' for the repo specified in cfg."""
+    return home.repo_status(cfg)
 
 
 def repo_status(cfg: dict) -> str:

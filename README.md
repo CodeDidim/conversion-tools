@@ -77,6 +77,7 @@ python workflow.py clean-logs
 python workflow.py status  # or workflow_company.py status
 ```
 This command now reports the full path to the configuration file before displaying
+
 the repository visibility.
 
 ![Workflow Diagram](docs/diagrams/manual-workflow.mermaid)

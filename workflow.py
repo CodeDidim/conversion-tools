@@ -212,6 +212,7 @@ def main() -> None:
         cleanup_logs(Path("log"), 30)
     elif args.command == "status":
         print(f"Using config file: {Path(args.config).resolve()}")
+
         cfg = load_config(args.config)
         vis = repo_status(cfg)
         print(f"Repository is {vis}")

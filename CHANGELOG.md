@@ -4,5 +4,6 @@
 - Add `status` command to report GitHub repository visibility
 - `workflow.py status` prints the full config file path being used
 
+
 ## 0.1.0
 - Initial simplified structure.

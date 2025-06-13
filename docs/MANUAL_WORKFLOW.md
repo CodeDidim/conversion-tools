@@ -11,7 +11,7 @@ Follow these steps when working with the private and public repositories.
    ```bash
    python workflow.py status
    ```
-   The command prints the path to the config file in use before showing the
+   The command prints the full path to the config file in use before showing the
    visibility state.
 7. Push the cleaned changes to GitHub.
 

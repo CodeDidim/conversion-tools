@@ -35,5 +35,4 @@ def public_workflow(config_path: Path = DEFAULT_CONFIG) -> Path:
     return export_dir
 
 
-if __name__ == '__main__':
-    private_workflow()
+

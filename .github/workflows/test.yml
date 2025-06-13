@@ -1,0 +1,24 @@
+name: Test Suite
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: [3.8, 3.9, 3.10, 3.11]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -r requirements.txt
+      - name: Run unit tests
+        run: pytest tests/unit -v
+      - name: Run integration tests
+        run: pytest tests/integration -v -m "not slow"
+      - name: Run edge case tests
+        run: pytest tests/unit/test_edge_cases.py -v
+      - name: Generate coverage report
+        run: pytest --cov=. --cov-report=html

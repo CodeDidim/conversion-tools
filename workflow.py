@@ -4,7 +4,7 @@ import sys
 import subprocess
 import json
 from urllib import request
-from typing import Optional
+from typing import Optional, Tuple
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
@@ -93,7 +93,7 @@ def repo_is_public(owner: str, repo: str) -> bool:
     return not data.get("private", True)
 
 
-def get_repo_fields(cfg: dict) -> tuple[str | None, str | None]:
+def get_repo_fields(cfg: dict) -> Tuple[Optional[str], Optional[str]]:
     """Extract GitHub ``owner`` and ``repo`` from configuration."""
 
     owner = cfg.get("github.owner")

@@ -57,3 +57,62 @@ def test_inject_context_token_no_spaces(tmp_path):
     inject_context(src, dst, profile)
 
     assert (dst / "file.txt").read_text() == "var=42\n"
+
+
+def test_overlay_symlink_within(tmp_path):
+    src = tmp_path / "src"
+    overlay = tmp_path / "overlay"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    overlay.mkdir()
+
+    (src / "base.txt").write_text("base")
+    (overlay / "real.txt").write_text("Val {{ KEY }}")
+    (overlay / "link.txt").symlink_to("real.txt")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("KEY: X\n")
+
+    inject_context(src, dst, profile, overlay)
+
+    assert (dst / "link.txt").is_symlink()
+    assert (dst / "real.txt").read_text() == "Val X"
+    assert (dst / "link.txt").resolve() == (dst / "real.txt").resolve()
+
+
+def test_overlay_symlink_outside(tmp_path):
+    src = tmp_path / "src"
+    overlay = tmp_path / "overlay"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    overlay.mkdir()
+
+    (src / "base.txt").write_text("base")
+    outside = tmp_path / "secret.txt"
+    outside.write_text("secret")
+    (overlay / "link.txt").symlink_to(outside)
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("")
+
+    inject_context(src, dst, profile, overlay)
+
+    assert not (dst / "link.txt").exists()
+
+
+def test_overlay_broken_symlink(tmp_path):
+    src = tmp_path / "src"
+    overlay = tmp_path / "overlay"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    overlay.mkdir()
+
+    (src / "base.txt").write_text("base")
+    (overlay / "broken.data").symlink_to("missing.data")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("")
+
+    inject_context(src, dst, profile, overlay)
+
+    assert (dst / "broken.data").is_symlink()

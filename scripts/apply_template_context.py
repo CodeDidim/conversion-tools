@@ -87,15 +87,34 @@ def copy_project(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst)
 
 
-def overlay_files(overlay_dir: Path, target_dir: Path) -> None:
-    """Overlay files from ``overlay_dir`` onto ``target_dir``."""
+def overlay_files(
+    overlay_dir: Path, target_dir: Path, log_file: Path, verbose: bool
+) -> None:
+    """Overlay files with symlink security checks."""
     for root, dirs, files in os.walk(overlay_dir):
         for name in files:
             src_path = Path(root) / name
             rel = src_path.relative_to(overlay_dir)
             dst_path = target_dir / rel
-            dst_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src_path, dst_path)
+
+            if src_path.is_symlink():
+                link_target = src_path.resolve()
+
+                try:
+                    link_target.relative_to(overlay_dir)
+                except ValueError:
+                    write_log(
+                        f"⚠️  Skipping symlink {src_path} -> {link_target} (outside overlay)",
+                        log_file,
+                        verbose,
+                    )
+                    continue
+
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                dst_path.symlink_to(src_path.readlink())
+            else:
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_path, dst_path)
 
 
 def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
@@ -141,7 +160,7 @@ def inject_context(
     """Copy project and replace tokens using profile, applying optional overlay."""
     copy_project(src, dst)
     if overlay:
-        overlay_files(overlay, dst)
+        overlay_files(overlay, dst, log_file, verbose)
     mapping = load_profile(profile)
     replace_tokens(dst, mapping, log_file, verbose)
 

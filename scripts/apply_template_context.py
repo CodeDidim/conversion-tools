@@ -7,7 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-import yaml
+try:
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    yaml = None
 
 # Ensure this script works when executed directly from the ``scripts`` folder.
 if __package__ is None:
@@ -27,7 +30,8 @@ def get_log_file(script_name: str) -> Path:
 
 
 def write_log(message: str, log_file: Path, verbose: bool) -> None:
-    with log_file.open("a") as f:
+    """Append a log message using UTF-8 encoding."""
+    with log_file.open("a", encoding="utf-8") as f:
         f.write(message + "\n")
     if verbose:
         print(message)
@@ -40,11 +44,14 @@ def load_profile(path: Path) -> Dict[str, str]:
 
     content = path.read_text(encoding="utf-8")
 
-    try:
-        data = yaml.safe_load(content) or {}
-    except yaml.YAMLError:
-        # Fallback to the previous very simple parser for backward
-        # compatibility with config files that are not valid YAML.
+    data = None
+    if yaml is not None:
+        try:
+            data = yaml.safe_load(content) or {}
+        except yaml.YAMLError:
+            data = None
+
+    if data is None:
         data = {}
         for lineno, line in enumerate(content.splitlines(), 1):
             line = line.split("#", 1)[0].strip()
@@ -68,7 +75,7 @@ def load_profile(path: Path) -> Dict[str, str]:
         if not isinstance(data, dict):
             raise ValueError(
                 f"❌ Profile {path} must contain a mapping\n"
-                "Verify the YAML structure or regenerate the profile from examples." 
+                "Verify the YAML structure or regenerate the profile from examples."
             )
         for key, value in list(data.items()):
             if not isinstance(key, str):
@@ -87,15 +94,34 @@ def copy_project(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst)
 
 
-def overlay_files(overlay_dir: Path, target_dir: Path) -> None:
-    """Overlay files from ``overlay_dir`` onto ``target_dir``."""
+def overlay_files(
+    overlay_dir: Path, target_dir: Path, log_file: Path, verbose: bool
+) -> None:
+    """Overlay files with symlink security checks."""
     for root, dirs, files in os.walk(overlay_dir):
         for name in files:
             src_path = Path(root) / name
             rel = src_path.relative_to(overlay_dir)
             dst_path = target_dir / rel
-            dst_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src_path, dst_path)
+
+            if src_path.is_symlink():
+                link_target = src_path.resolve()
+
+                try:
+                    link_target.relative_to(overlay_dir)
+                except ValueError:
+                    write_log(
+                        f"⚠️  Skipping symlink {src_path} -> {link_target} (outside overlay)",
+                        log_file,
+                        verbose,
+                    )
+                    continue
+
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                dst_path.symlink_to(os.readlink(src_path))
+            else:
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_path, dst_path)
 
 
 def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
@@ -141,7 +167,7 @@ def inject_context(
     """Copy project and replace tokens using profile, applying optional overlay."""
     copy_project(src, dst)
     if overlay:
-        overlay_files(overlay, dst)
+        overlay_files(overlay, dst, log_file, verbose)
     mapping = load_profile(profile)
     replace_tokens(dst, mapping, log_file, verbose)
 

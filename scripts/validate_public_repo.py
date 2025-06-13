@@ -1,7 +1,7 @@
 import re
 import sys
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, List, Pattern
 
 
 COMPANY_PATTERNS = [
@@ -24,8 +24,8 @@ TOKEN_PATTERNS = [
 ]
 
 
-def build_patterns() -> Iterable[Tuple[re.Pattern[str], str]]:
-    patterns: list[Tuple[re.Pattern[str], str]] = []
+def build_patterns() -> Iterable[Tuple[Pattern, str]]:
+    patterns: List[Tuple[Pattern, str]] = []
     patterns.extend((re.compile(p, re.IGNORECASE), "Company reference") for p in COMPANY_PATTERNS)
     patterns.append((re.compile(EMAIL_PATTERN, re.IGNORECASE), "Email"))
     patterns.append((re.compile(IP_PATTERN), "IP address"))

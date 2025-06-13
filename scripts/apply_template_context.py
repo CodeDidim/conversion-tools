@@ -51,19 +51,31 @@ def load_profile(path: Path) -> Dict[str, str]:
             if not line:
                 continue
             if ":" not in line:
-                raise ValueError(f"Invalid line {lineno!r} in profile {path}")
+                raise ValueError(
+                    f"❌ Invalid line {lineno!r} in profile {path}\n"
+                    "Each line must be in 'KEY: value' format."
+                )
             key, value = line.split(":", 1)
             key = key.strip()
             value = value.strip().strip("'\"")
             if not key:
-                raise ValueError(f"Missing key on line {lineno} in profile {path}")
+                raise ValueError(
+                    f"❌ Missing key on line {lineno} in profile {path}\n"
+                    "Ensure lines use 'KEY: value' syntax."
+                )
             data[key] = value
     else:
         if not isinstance(data, dict):
-            raise ValueError(f"Profile {path} must contain a mapping")
+            raise ValueError(
+                f"❌ Profile {path} must contain a mapping\n"
+                "Verify the YAML structure or regenerate the profile from examples." 
+            )
         for key, value in list(data.items()):
             if not isinstance(key, str):
-                raise ValueError(f"Profile key must be string, got {type(key)}")
+                raise ValueError(
+                    f"❌ Profile key must be string, got {type(key)}\n"
+                    "Check for missing quotes around keys."
+                )
             if not isinstance(value, str):
                 data[key] = str(value)
 

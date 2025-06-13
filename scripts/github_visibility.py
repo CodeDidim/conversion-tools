@@ -35,11 +35,27 @@ def main() -> None:
     owner = gh.get("owner")
     repo = gh.get("repo")
     if not owner or not repo:
-        raise SystemExit("github.owner and github.repo must be set in config")
+        raise SystemExit(
+            "❌ github.owner and github.repo must be set in config\n"
+            "\n"
+            "Run 'workflow.py init' to generate a default config or copy\n"
+            "examples/.workflow-config.yaml.example and update owner/repo."
+        )
 
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        raise SystemExit("GITHUB_TOKEN environment variable required")
+        raise SystemExit(
+            "❌ GITHUB_TOKEN environment variable not found\n"
+            "\n"
+            "To fix this:\n"
+            "1. Create a GitHub Personal Access Token:\n"
+            "   https://github.com/settings/tokens\n"
+            "2. Grant 'repo' scope\n"
+            "3. Set the environment variable:\n"
+            "   Linux/Mac: export GITHUB_TOKEN='ghp_your_token'\n"
+            "   Windows:   set GITHUB_TOKEN=ghp_your_token\n"
+            "   PowerShell: $env:GITHUB_TOKEN='ghp_your_token'\n"
+        )
 
     make_private = args.command == "hide"
     set_visibility(owner, repo, make_private, token)

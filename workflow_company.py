@@ -4,10 +4,14 @@ import json
 import subprocess
 from urllib import request
 
+from core.rollback import RollbackManager
+
 import workflow as home
 
 DEFAULT_CONFIG = Path('.workflow-config-company.yaml')
 MAIN_CONFIG = Path('.workflow-config.yaml')
+
+rollback_manager = RollbackManager(Path('.'))
 
 
 def private_workflow(
@@ -63,12 +67,44 @@ def public_workflow(
     return home.public_workflow(config_path, dry_run=dry_run)
 
 
+def _rollback_cli(args: argparse.Namespace) -> None:
+    if args.list:
+        for snap in rollback_manager.list_snapshots():
+            print(f"{snap['timestamp']} - {snap.get('operation', '')}")
+        return
+
+    snapshot_id = None
+    if args.to:
+        snapshot_id = args.to
+    elif args.steps is not None:
+        snaps = rollback_manager.list_snapshots()
+        if len(snaps) > args.steps:
+            snapshot_id = snaps[args.steps].get("timestamp")
+    else:
+        snaps = rollback_manager.list_snapshots()
+        if snaps:
+            snapshot_id = snaps[0]["timestamp"]
+
+    if not snapshot_id:
+        print("No snapshot found")
+        return
+    if rollback_manager.rollback_to(snapshot_id, dry_run=args.dry_run):
+        print(f"Rolled back to {snapshot_id}")
+    else:
+        print("Rollback failed")
+
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Company workflow helper")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("private", help="Run private workflow")
     sub.add_parser("public", help="Run public workflow")
+    roll = sub.add_parser("rollback", help="Manage rollbacks")
+    roll.add_argument("--list", action="store_true")
+    roll.add_argument("--to", type=str)
+    roll.add_argument("--steps", type=int)
+    roll.add_argument("--dry-run", action="store_true")
     pull_parser = sub.add_parser("pull", help="Git pull with safety checks")
     pull_parser.add_argument("--force", action="store_true", help="Skip safety checks")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Config file path")
@@ -79,6 +115,8 @@ def main() -> None:
         private_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "public":
         public_workflow(args.config, dry_run=args.dry_run)
+    elif args.command == "rollback":
+        _rollback_cli(args)
     elif args.command == "pull":
         cfg = load_config(MAIN_CONFIG)
         pull_repo(cfg, force=args.force)

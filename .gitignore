@@ -46,3 +46,4 @@ Desktop.ini
 *.bak
 *.orig
 *.patch
+.workflow-rollbacks/

@@ -112,6 +112,7 @@ def repo_status(cfg: dict) -> str:
 
     owner, repo = get_repo_fields(cfg)
 
+
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"

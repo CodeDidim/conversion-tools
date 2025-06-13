@@ -34,7 +34,9 @@ def repo_is_public(owner: str, repo: str) -> bool:
 
 def repo_status(cfg: dict) -> str:
     """Return 'public' or 'private' for the repo specified in cfg."""
+
     owner, repo = home.get_repo_fields(cfg)
+
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"
@@ -51,7 +53,9 @@ def confirm(message: str) -> bool:
 
 
 def pull_repo(cfg: dict, force: bool = False) -> None:
+
     owner, repo = home.get_repo_fields(cfg)
+
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"

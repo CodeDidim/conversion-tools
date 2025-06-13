@@ -38,23 +38,36 @@ def load_profile(path: Path) -> Dict[str, str]:
     if not path.exists():
         return {}
 
-    try:
-        with path.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+    content = path.read_text(encoding="utf-8")
 
+    try:
+        data = yaml.safe_load(content) or {}
+    except yaml.YAMLError:
+        # Fallback to the previous very simple parser for backward
+        # compatibility with config files that are not valid YAML.
+        data = {}
+        for lineno, line in enumerate(content.splitlines(), 1):
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            if ":" not in line:
+                raise ValueError(f"Invalid line {lineno!r} in profile {path}")
+            key, value = line.split(":", 1)
+            key = key.strip()
+            value = value.strip().strip("'\"")
+            if not key:
+                raise ValueError(f"Missing key on line {lineno} in profile {path}")
+            data[key] = value
+    else:
         if not isinstance(data, dict):
             raise ValueError(f"Profile {path} must contain a mapping")
-
         for key, value in list(data.items()):
             if not isinstance(key, str):
                 raise ValueError(f"Profile key must be string, got {type(key)}")
             if not isinstance(value, str):
                 data[key] = str(value)
 
-        return data
-
-    except yaml.YAMLError as e:
-        raise ValueError(f"Invalid YAML in profile {path}: {e}")
+    return data
 
 
 def copy_project(src: Path, dst: Path) -> None:

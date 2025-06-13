@@ -9,20 +9,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.apply_template_context import get_log_file, write_log
-
-KEYWORDS = [
-    "YourCompany",
-    "MY_ORGANIZATION_NAME",
-    "@company.com",
-    "embedded-test-team@",
-]
-
-TEXT_EXTENSIONS = {
-    ".py", ".robot", ".yaml", ".md", ".txt",
-    ".toml", ".sh", ".ps1", ".yml",
-    ".gitignore", ".dockerignore", ".in", ".example",
-    ".validate", ".excalidraw",
-}
+from core.constants import KEYWORDS, TEXT_EXTENSIONS
 
 
 def should_filter_line(line: str) -> bool:

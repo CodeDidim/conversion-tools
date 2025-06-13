@@ -10,6 +10,8 @@ from typing import Dict
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from core.constants import TEXT_EXTENSIONS
+
 
 from scripts.apply_template_context import (
     load_profile,
@@ -18,12 +20,6 @@ from scripts.apply_template_context import (
     write_log,
 )
 
-TEXT_EXTENSIONS = {
-    ".py", ".robot", ".yaml", ".md", ".txt",
-    ".toml", ".sh", ".ps1", ".yml",
-    ".gitignore", ".dockerignore", ".in", ".example",
-    ".validate", ".excalidraw", ".log",
-}
 
 
 def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:

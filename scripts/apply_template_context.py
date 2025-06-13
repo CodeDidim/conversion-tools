@@ -2,29 +2,17 @@ import argparse
 import os
 import re
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-# File extensions and special file names treated as text for token replacement
-TEXT_EXTENSIONS = {
-    ".py",
-    ".robot",
-    ".yaml",
-    ".md",
-    ".txt",
-    ".toml",
-    ".sh",
-    ".ps1",
-    ".yml",
-    ".gitignore",
-    ".dockerignore",
-    ".in",
-    ".example",
-    ".validate",
-    ".excalidraw",
-    ".log",
-}
+# Ensure this script works when executed directly from the ``scripts`` folder.
+if __package__ is None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from core.constants import TEXT_EXTENSIONS
+
 
 LOG_DIR = Path("log")
 

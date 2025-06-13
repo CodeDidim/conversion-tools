@@ -55,6 +55,17 @@ non‑zero status if any issues are found.
 python scripts/validate_public_repo.py
 ```
 
+### `github_visibility.py`
+
+Manually toggles your GitHub repository between public and private states.
+It reads the repository owner and name from `.workflow-config.yaml` and uses
+the `GITHUB_TOKEN` environment variable for authentication.
+
+```
+python scripts/github_visibility.py hide   # make private
+python scripts/github_visibility.py unhide # make public
+```
+
 ## Configuration Profiles
 
 Example YAML profiles can be found under `scripts/config_profiles/`.

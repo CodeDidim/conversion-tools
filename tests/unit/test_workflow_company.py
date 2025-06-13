@@ -53,4 +53,5 @@ def test_company_repo_status_nested(monkeypatch):
     assert workflow_company.repo_status(cfg) == "public"
 
     monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: False)
+
     assert workflow_company.repo_status(cfg) == "private"

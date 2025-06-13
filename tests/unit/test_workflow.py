@@ -25,3 +25,25 @@ def test_private_public_cycle(tmp_path):
     export_dir = workflow.public_workflow(cfg)
     assert (export_dir / 'a.txt').exists()
 
+
+def test_private_public_dry_run(tmp_path):
+    cfg = tmp_path / 'config.yaml'
+    profile = tmp_path / 'profile.yaml'
+    template = tmp_path / 'template'
+    overlay = tmp_path / 'overlay'
+    work = tmp_path / 'work'
+    template.mkdir()
+    overlay.mkdir()
+    (template / 'a.txt').write_text('x={{X}}\n')
+    profile.write_text('X: 1\n')
+    cfg.write_text(
+        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
+        f'template: "{template}"\n'
+    )
+
+    private_dir = workflow.private_workflow(cfg, dry_run=True)
+    assert private_dir.exists() is False
+
+    export_dir = workflow.public_workflow(cfg, dry_run=True)
+    assert export_dir.exists() is False
+

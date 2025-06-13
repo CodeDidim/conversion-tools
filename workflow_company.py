@@ -10,8 +10,12 @@ DEFAULT_CONFIG = Path('.workflow-config-company.yaml')
 MAIN_CONFIG = Path('.workflow-config.yaml')
 
 
-def private_workflow(config_path: Path = DEFAULT_CONFIG) -> Path:
-    return home.private_workflow(config_path)
+def private_workflow(
+    config_path: Path = DEFAULT_CONFIG,
+    *,
+    dry_run: bool = False,
+) -> Path:
+    return home.private_workflow(config_path, dry_run=dry_run)
 
 
 def load_config(path: Path = DEFAULT_CONFIG) -> dict:
@@ -51,8 +55,12 @@ def pull_repo(cfg: dict, force: bool = False) -> None:
     subprocess.run(["git", "pull"], check=True)
 
 
-def public_workflow(config_path: Path = DEFAULT_CONFIG) -> Path:
-    return home.public_workflow(config_path)
+def public_workflow(
+    config_path: Path = DEFAULT_CONFIG,
+    *,
+    dry_run: bool = False,
+) -> Path:
+    return home.public_workflow(config_path, dry_run=dry_run)
 
 
 
@@ -64,12 +72,13 @@ def main() -> None:
     pull_parser = sub.add_parser("pull", help="Git pull with safety checks")
     pull_parser.add_argument("--force", action="store_true", help="Skip safety checks")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Config file path")
+    parser.add_argument("--dry-run", action="store_true", help="Print actions without making changes")
     args = parser.parse_args()
 
     if args.command == "private":
-        private_workflow(args.config)
+        private_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "public":
-        public_workflow(args.config)
+        public_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "pull":
         cfg = load_config(MAIN_CONFIG)
         pull_repo(cfg, force=args.force)

@@ -11,6 +11,8 @@ Follow these steps when working with the private and public repositories.
    ```bash
    python workflow.py status
    ```
+   The command prints the full path to the config file in use before showing the
+   visibility state.
 7. Push the cleaned changes to GitHub.
 
 See `diagrams/manual-workflow.mermaid` for a visual overview of the process.

@@ -33,3 +33,13 @@ def test_company_dry_run(tmp_path):
 
     export_dir = workflow_company.public_workflow(cfg, dry_run=True)
     assert export_dir.exists() is False
+
+
+def test_company_repo_status(monkeypatch):
+    cfg = {"github.owner": "o", "github.repo": "r"}
+
+    monkeypatch.setattr(workflow_company, "repo_is_public", lambda o, r: True)
+    assert workflow_company.repo_status(cfg) == "public"
+
+    monkeypatch.setattr(workflow_company, "repo_is_public", lambda o, r: False)
+    assert workflow_company.repo_status(cfg) == "private"

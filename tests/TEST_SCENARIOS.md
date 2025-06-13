@@ -3,7 +3,7 @@
 ## Scenario 1: New Developer Onboarding
 1. Developer clones public repo at company
 2. Attempts to run without setup
-3. Runs init command
+3. Copies the example config files
 4. Attempts to pull without repo being public
 5. Gets clear instructions
 6. Successfully completes first workflow

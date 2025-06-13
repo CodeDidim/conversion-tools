@@ -139,16 +139,25 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print actions without making changes")
     args = parser.parse_args()
 
+    def ensure_config(path: Path) -> None:
+        if not path.exists():
+            raise SystemExit(f"\u274c Config file not found: {path}")
+
     if args.command == "private":
+        ensure_config(args.config)
         private_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "public":
+        ensure_config(args.config)
         public_workflow(args.config, dry_run=args.dry_run)
     elif args.command == "rollback":
         _rollback_cli(args)
     elif args.command == "pull":
+        ensure_config(MAIN_CONFIG)
         cfg = load_config(MAIN_CONFIG)
         pull_repo(cfg, force=args.force)
     elif args.command == "status":
+        print(f"Using config file: {MAIN_CONFIG.resolve()}")
+        ensure_config(MAIN_CONFIG)
         cfg = load_config(MAIN_CONFIG)
         vis = repo_status(cfg)
         print(f"Repository is {vis}")

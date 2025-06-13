@@ -30,6 +30,9 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Config file path")
     args = parser.parse_args()
 
+    if not args.config.exists():
+        raise SystemExit(f"\u274c Config file not found: {args.config}")
+
     cfg = load_config(args.config)
     gh = cfg.get("github", {})
     owner = gh.get("owner")

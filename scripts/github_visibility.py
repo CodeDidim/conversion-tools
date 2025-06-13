@@ -34,9 +34,14 @@ def main() -> None:
         raise SystemExit(f"\u274c Config file not found: {args.config}")
 
     cfg = load_config(args.config)
-    gh = cfg.get("github", {})
-    owner = gh.get("owner") or cfg.get("owner")
-    repo = gh.get("repo") or cfg.get("repo")
+    gh = cfg.get("github")
+    owner = None
+    repo = None
+    if isinstance(gh, dict):
+        owner = gh.get("owner")
+        repo = gh.get("repo")
+    owner = owner or cfg.get("github.owner") or cfg.get("owner")
+    repo = repo or cfg.get("github.repo") or cfg.get("repo")
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"

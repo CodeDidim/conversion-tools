@@ -93,19 +93,24 @@ def repo_is_public(owner: str, repo: str) -> bool:
     return not data.get("private", True)
 
 
+def get_repo_fields(cfg: dict) -> tuple[str | None, str | None]:
+    """Extract GitHub ``owner`` and ``repo`` from configuration."""
+
+    owner = cfg.get("github.owner")
+    repo = cfg.get("github.repo")
+    github = cfg.get("github")
+    if isinstance(github, dict):
+        owner = owner or github.get("owner")
+        repo = repo or github.get("repo")
+    owner = owner or cfg.get("owner")
+    repo = repo or cfg.get("repo")
+    return owner, repo
+
+
 def repo_status(cfg: dict) -> str:
     """Return 'public' or 'private' based on GitHub visibility."""
 
-    owner = (
-        cfg.get("github.owner")
-        or cfg.get("github", {}).get("owner")
-        or cfg.get("owner")
-    )
-    repo = (
-        cfg.get("github.repo")
-        or cfg.get("github", {}).get("repo")
-        or cfg.get("repo")
-    )
+    owner, repo = get_repo_fields(cfg)
 
     if not owner or not repo:
         raise SystemExit(

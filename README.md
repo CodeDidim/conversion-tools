@@ -68,6 +68,10 @@ python scripts/validate_public_repo.py
 ```bash
 python workflow.py rollback
 ```
+- Remove old log files:
+```bash
+python workflow.py clean-logs
+```
 
 ![Workflow Diagram](docs/diagrams/manual-workflow.mermaid)
 

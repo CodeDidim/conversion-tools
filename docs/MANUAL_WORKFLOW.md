@@ -12,8 +12,7 @@ Follow these steps when working with the private and public repositories.
    python workflow.py status
    ```
    The command prints the full path to the config file in use before showing the
-
-   visibility state.
+   visibility state. It exits with an error if the config file cannot be found.
 7. Push the cleaned changes to GitHub.
 
 See `diagrams/manual-workflow.mermaid` for a visual overview of the process.

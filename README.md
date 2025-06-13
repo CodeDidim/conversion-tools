@@ -12,15 +12,15 @@ pip install -r requirements.txt
 ```
 
 ### 2. Initial Setup
-**At home (with GitHub access)**
+Copy the example configuration and set your GitHub token:
 ```bash
-python workflow.py init
+cp examples/.workflow-config.yaml.example .workflow-config.yaml
 export GITHUB_TOKEN='ghp_your_token_here'
 ```
 
-**At company (without GitHub access)**
+If you work without GitHub access, also copy the company example:
 ```bash
-python workflow_company.py init
+cp examples/.workflow-config-company.yaml.example .workflow-config-company.yaml
 ```
 
 ### 3. Basic Usage

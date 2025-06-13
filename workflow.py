@@ -93,8 +93,8 @@ def repo_is_public(owner: str, repo: str) -> bool:
     return not data.get("private", True)
 
 
-def repo_status(cfg: dict) -> str:
-    """Return 'public' or 'private' based on GitHub visibility."""
+def get_repo_fields(cfg: dict) -> tuple[str | None, str | None]:
+    """Extract GitHub ``owner`` and ``repo`` from configuration."""
 
     owner = cfg.get("github.owner")
     repo = cfg.get("github.repo")
@@ -102,13 +102,22 @@ def repo_status(cfg: dict) -> str:
     if isinstance(github, dict):
         owner = owner or github.get("owner")
         repo = repo or github.get("repo")
+    owner = owner or cfg.get("owner")
+    repo = repo or cfg.get("repo")
+    return owner, repo
+
+
+def repo_status(cfg: dict) -> str:
+    """Return 'public' or 'private' based on GitHub visibility."""
+
+    owner, repo = get_repo_fields(cfg)
 
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"
             "\n"
-            "Run 'workflow.py init' to generate a default configuration or copy\n"
-            "examples/.workflow-config.yaml.example and edit owner/repo."
+            "Copy examples/.workflow-config.yaml.example, update owner/repo, and\n"
+            "place it as .workflow-config.yaml in your project."
         )
     return "public" if repo_is_public(owner, repo) else "private"
 

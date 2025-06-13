@@ -34,19 +34,13 @@ def repo_is_public(owner: str, repo: str) -> bool:
 
 def repo_status(cfg: dict) -> str:
     """Return 'public' or 'private' for the repo specified in cfg."""
-    return home.repo_status(cfg)
-
-
-def repo_status(cfg: dict) -> str:
-    """Return 'public' or 'private' for the repo specified in cfg."""
-    owner = cfg.get("github.owner") or cfg.get("github", {}).get("owner")
-    repo = cfg.get("github.repo") or cfg.get("github", {}).get("repo")
+    owner, repo = home.get_repo_fields(cfg)
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"
             "\n"
-            "Run 'workflow.py init' to generate a default configuration or copy\n"
-            "examples/.workflow-config-company.yaml.example and edit owner/repo."
+            "Copy examples/.workflow-config-company.yaml.example, update owner/repo,"\
+            " and place it as .workflow-config-company.yaml."
         )
     return "public" if repo_is_public(owner, repo) else "private"
 
@@ -57,14 +51,13 @@ def confirm(message: str) -> bool:
 
 
 def pull_repo(cfg: dict, force: bool = False) -> None:
-    owner = cfg.get("github.owner")
-    repo = cfg.get("github.repo")
+    owner, repo = home.get_repo_fields(cfg)
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"
             "\n"
-            "Run 'workflow.py init' to generate a default configuration or copy\n"
-            "examples/.workflow-config-company.yaml.example and edit owner/repo."
+            "Copy examples/.workflow-config-company.yaml.example, update owner/repo,"\
+            " and place it as .workflow-config-company.yaml."
         )
 
     if not force:

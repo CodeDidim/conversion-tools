@@ -8,12 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.apply_template_context import inject_context
 
 
-def test_large_repository_conversion_time():
+def test_large_repository_conversion_time(tmp_path):
     """Ensure conversion completes in reasonable time"""
-    src = Path("src")
-    dst = Path("dst")
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
     src.mkdir()
-    profile = Path("p.yaml")
+    profile = tmp_path / "p.yaml"
     profile.write_text("K: v")
     for i in range(200):
         (src / f"f{i}.txt").write_text("{{K}}\n" * 10)
@@ -23,12 +23,12 @@ def test_large_repository_conversion_time():
     assert duration < 5
 
 
-def test_memory_usage_during_conversion():
+def test_memory_usage_during_conversion(tmp_path):
     """Ensure memory usage stays reasonable"""
-    src = Path("src")
-    dst = Path("dst")
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
     src.mkdir()
-    profile = Path("p.yaml")
+    profile = tmp_path / "p.yaml"
     profile.write_text("K: v")
     for i in range(100):
         (src / f"f{i}.txt").write_text("{{K}}\n")

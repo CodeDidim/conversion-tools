@@ -15,7 +15,7 @@ from scripts.apply_template_context import inject_context
 class TestErrorScenarios:
     """Test error handling and recovery"""
 
-    def test_pull_while_private(self):
+    def test_pull_while_private(self, tmp_path):
         """Attempt to pull at company while repo is private"""
         cfg = {"github.owner": "o", "github.repo": "r"}
 
@@ -33,23 +33,23 @@ class TestErrorScenarios:
             workflow_company.pull_repo(cfg)
         monkeypatch.undo()
 
-    def test_push_with_secrets_exposed(self):
+    def test_push_with_secrets_exposed(self, tmp_path):
         """Attempt to push code that still contains secrets"""
-        base = Path("export")
+        base = tmp_path / "export"
         base.mkdir()
         (base / "file.txt").write_text("email@company.com")
         assert not validate_directory(base)
 
-    def test_interrupted_conversion(self):
+    def test_interrupted_conversion(self, tmp_path):
         """Simulate crash during private->public conversion"""
-        cfg = Path("c.yaml")
-        profile = Path("p.yaml")
-        template = Path("t")
+        cfg = tmp_path / "c.yaml"
+        profile = tmp_path / "p.yaml"
+        template = tmp_path / "t"
         template.mkdir()
         (template / "a.txt").write_text("x={{X}}")
         profile.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"work\"\n"
+            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
         )
         workflow.private_workflow(cfg)
 
@@ -60,19 +60,19 @@ class TestErrorScenarios:
         monkeypatch.setattr(workflow, "revert_context", boom)
         with pytest.raises(RuntimeError):
             workflow.public_workflow(cfg)
-        assert not Path("work/public").exists()
+        assert not (tmp_path / "public").exists()
         monkeypatch.undo()
 
-    def test_git_conflicts_during_conversion(self):
+    def test_git_conflicts_during_conversion(self, tmp_path):
         """Create git conflicts then attempt conversion"""
-        cfg = Path("c.yaml")
-        profile = Path("p.yaml")
-        template = Path("t")
+        cfg = tmp_path / "c.yaml"
+        profile = tmp_path / "p.yaml"
+        template = tmp_path / "t"
         template.mkdir()
         (template / "a.txt").write_text("x={{X}}")
         profile.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"work\"\n"
+            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
         )
         workflow.private_workflow(cfg)
 
@@ -90,27 +90,27 @@ class TestErrorScenarios:
         with pytest.raises(FileNotFoundError):
             workflow.private_workflow(Path("missing.yaml"))
 
-    def test_corrupted_profile_yaml(self):
+    def test_corrupted_profile_yaml(self, tmp_path):
         """Test handling of malformed YAML profiles"""
-        src = Path("src")
-        dst = Path("dst")
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
         src.mkdir()
         (src / "a.txt").write_text("v={{A}}")
-        profile = Path("p.yaml")
+        profile = tmp_path / "p.yaml"
         profile.write_text("A: 1\n: bad")
         inject_context(src, dst, profile)
         assert (dst / "a.txt").read_text() == "v=1"
 
-    def test_network_timeout_scenarios(self):
+    def test_network_timeout_scenarios(self, tmp_path):
         """Test timeouts during git operations"""
-        cfg = Path("c.yaml")
-        profile = Path("p.yaml")
-        template = Path("t")
+        cfg = tmp_path / "c.yaml"
+        profile = tmp_path / "p.yaml"
+        template = tmp_path / "t"
         template.mkdir()
         (template / "a.txt").write_text("x={{X}}")
         profile.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"work\"\n"
+            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
         )
 
         orig_run = subprocess.run
@@ -125,14 +125,14 @@ class TestErrorScenarios:
         workflow.private_workflow(cfg)
         monkeypatch.undo()
 
-    def test_insufficient_permissions(self):
+    def test_insufficient_permissions(self, tmp_path):
         """Test handling of permission errors"""
-        src = Path("src")
+        src = tmp_path / "src"
         src.mkdir()
         (src / "a.txt").write_text("x={{X}}")
-        profile = Path("p.yaml")
+        profile = tmp_path / "p.yaml"
         profile.write_text("X: 1")
-        dst = Path("out")
+        dst = tmp_path / "out"
 
         orig_write_text = Path.write_text
 
@@ -147,13 +147,13 @@ class TestErrorScenarios:
             inject_context(src, dst, profile)
         monkeypatch.undo()
 
-    def test_disk_space_exhaustion(self):
+    def test_disk_space_exhaustion(self, tmp_path):
         """Test behavior when disk space runs out mid-operation"""
-        src = Path("src")
-        dst = Path("dst")
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
         src.mkdir()
         (src / "a.txt").write_text("x={{X}}")
-        profile = Path("p.yaml")
+        profile = tmp_path / "p.yaml"
         profile.write_text("X: 1")
 
         import errno

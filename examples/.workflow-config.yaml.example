@@ -1,9 +1,5 @@
-# Example workflow configuration for home environment
+# Simplified .workflow-config.yaml
 github:
-  owner: "YOUR_GITHUB_USERNAME"
-  repo: "your-repository-name"
-
-profile: "scripts/config_profiles/company_profile.yaml"
-overlay_dir: "private-overlay"
-template: "template"
-temp_dir: ".workflow-temp"
+  owner: "USERNAME"
+  repo: "REPO"
+  # No token needed at company!

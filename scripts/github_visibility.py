@@ -35,14 +35,14 @@ def main() -> None:
 
     cfg = load_config(args.config)
     gh = cfg.get("github", {})
-    owner = gh.get("owner")
-    repo = gh.get("repo")
+    owner = gh.get("owner") or cfg.get("owner")
+    repo = gh.get("repo") or cfg.get("repo")
     if not owner or not repo:
         raise SystemExit(
             "❌ github.owner and github.repo must be set in config\n"
             "\n"
-            "Run 'workflow.py init' to generate a default config or copy\n"
-            "examples/.workflow-config.yaml.example and update owner/repo."
+            "Copy examples/.workflow-config.yaml.example, update owner/repo, and"\
+            " place it as .workflow-config.yaml."
         )
 
     token = os.environ.get("GITHUB_TOKEN")

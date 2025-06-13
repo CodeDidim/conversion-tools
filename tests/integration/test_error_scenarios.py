@@ -98,8 +98,8 @@ class TestErrorScenarios:
         (src / "a.txt").write_text("v={{A}}")
         profile = tmp_path / "p.yaml"
         profile.write_text("A: 1\n: bad")
-        inject_context(src, dst, profile)
-        assert (dst / "a.txt").read_text() == "v=1"
+        with pytest.raises(ValueError):
+            inject_context(src, dst, profile)
 
     def test_network_timeout_scenarios(self, tmp_path):
         """Test timeouts during git operations"""

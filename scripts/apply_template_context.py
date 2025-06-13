@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
+import yaml
+
 # Ensure this script works when executed directly from the ``scripts`` folder.
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -32,19 +34,39 @@ def write_log(message: str, log_file: Path, verbose: bool) -> None:
 
 
 def load_profile(path: Path) -> Dict[str, str]:
-    """Load a very simple YAML file mapping keys to string values."""
-    data: Dict[str, str] = {}
+    """Load YAML profile using proper YAML parser."""
     if not path.exists():
-        return data
-    with path.open("r") as f:
-        for line in f:
+        return {}
+
+    content = path.read_text(encoding="utf-8")
+
+    try:
+        data = yaml.safe_load(content) or {}
+    except yaml.YAMLError:
+        # Fallback to the previous very simple parser for backward
+        # compatibility with config files that are not valid YAML.
+        data = {}
+        for lineno, line in enumerate(content.splitlines(), 1):
             line = line.split("#", 1)[0].strip()
             if not line:
                 continue
             if ":" not in line:
-                continue
+                raise ValueError(f"Invalid line {lineno!r} in profile {path}")
             key, value = line.split(":", 1)
-            data[key.strip()] = value.strip().strip("'\"")
+            key = key.strip()
+            value = value.strip().strip("'\"")
+            if not key:
+                raise ValueError(f"Missing key on line {lineno} in profile {path}")
+            data[key] = value
+    else:
+        if not isinstance(data, dict):
+            raise ValueError(f"Profile {path} must contain a mapping")
+        for key, value in list(data.items()):
+            if not isinstance(key, str):
+                raise ValueError(f"Profile key must be string, got {type(key)}")
+            if not isinstance(value, str):
+                data[key] = str(value)
+
     return data
 
 

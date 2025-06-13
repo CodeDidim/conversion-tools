@@ -30,7 +30,8 @@ def get_log_file(script_name: str) -> Path:
 
 
 def write_log(message: str, log_file: Path, verbose: bool) -> None:
-    with log_file.open("a") as f:
+    """Append a log message using UTF-8 encoding."""
+    with log_file.open("a", encoding="utf-8") as f:
         f.write(message + "\n")
     if verbose:
         print(message)

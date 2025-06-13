@@ -1,5 +1,8 @@
 from pathlib import Path
 import argparse
+import sys
+import subprocess
+from typing import Optional
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
@@ -12,6 +15,67 @@ DEFAULT_CONFIG = Path('.workflow-config.yaml')
 
 rollback_manager = RollbackManager(Path('.'))
 
+
+class WorkflowManager:
+    def __init__(self, project_dir: Optional[Path] = None):
+        """Initialize paths so the workflow works from any directory."""
+        # Directory where workflow.py lives
+        self.workflow_dir = Path(__file__).resolve().parent
+
+        # Project directory (where we're applying templates)
+        self.root_dir = project_dir or Path.cwd()
+
+        # Config in project directory
+        self.config_file = self.root_dir / ".workflow-config.yaml"
+
+        # Scripts are relative to workflow.py
+        self.conversion_tools_dir = self.workflow_dir
+        self.scripts_dir = self.workflow_dir / "scripts"
+
+        # Ensure scripts directory exists
+        if not self.scripts_dir.exists():
+            print(f"❌ Scripts directory not found: {self.scripts_dir}")
+            print(f"   Expected to find it relative to {self.workflow_dir}")
+            sys.exit(1)
+
+        self.load_config()
+        self.setup_github_manager()
+
+    def load_config(self) -> None:
+        """Load configuration from the project directory."""
+        if self.config_file.exists():
+            self.config = load_profile(self.config_file)
+        else:
+            self.config = {}
+
+    def setup_github_manager(self) -> None:  # pragma: no cover - simple stub
+        """Placeholder for GitHub-related setup."""
+        self.github_manager = None
+
+    def to_private(self) -> None:  # pragma: no cover - CLI helper
+        """Convert public code to private."""
+        print("\n🔄 Converting to PRIVATE mode...")
+
+        temp_dir = self.root_dir / ".workflow-temp"
+
+        # Apply private template
+        print("→ Applying private templates...")
+        apply_script = self.scripts_dir / "apply_template_context.py"
+
+        # Make sure the script exists
+        if not apply_script.exists():
+            print(f"❌ Script not found: {apply_script}")
+            sys.exit(1)
+
+        cmd = [
+            sys.executable,
+            str(apply_script),
+            str(self.root_dir),
+            str(temp_dir),
+            str(self.conversion_tools_dir / self.config.get("profile", "")),
+            "--verbose",
+        ]
+        subprocess.run(cmd, check=True)
 
 def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     return load_profile(path)

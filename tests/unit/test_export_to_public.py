@@ -38,3 +38,17 @@ def test_export_directory_cleans_and_copies(tmp_path):
     yaml_lines = (dst / "nested" / "config.yaml").read_text().splitlines()
     assert yaml_lines == ["key: value"]
 
+
+def test_export_directory_case_insensitive(tmp_path):
+    """Lines are removed regardless of keyword case."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+
+    f = src / "sample.txt"
+    f.write_text("This line mentions yourcompany and should vanish\nKeep me\n")
+
+    export_directory(src, dst)
+
+    assert (dst / "sample.txt").read_text() == "Keep me\n"
+

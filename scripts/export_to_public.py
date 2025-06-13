@@ -26,9 +26,14 @@ TEXT_EXTENSIONS = {
 
 
 def should_filter_line(line: str) -> bool:
-    """Return True if the line contains any of the keywords."""
+    """Return True if the line contains any of the keywords.
+
+    Matching is performed case-insensitively to catch variations like
+    ``yourcompany`` or ``My_Organization_Name``.
+    """
+    lower = line.lower()
     for kw in KEYWORDS:
-        if kw in line:
+        if kw.lower() in lower:
             return True
     return False
 

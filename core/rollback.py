@@ -2,7 +2,9 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from datetime import datetime
+# Use timezone-aware timestamps to avoid ambiguity in comparisons and logging
+# Rollbacks use UTC so snapshots are consistent across environments
+from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -57,7 +59,8 @@ class RollbackManager:
 
     # ------------------------------------------------------------------
     def create_snapshot(self, operation: str, config_snapshot: Optional[Dict] = None) -> str:
-        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S%fZ")
+        # Use UTC so snapshot timestamps sort consistently regardless of local timezone
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         snap_dir = self.storage / ts
         snap_dir.mkdir(parents=True, exist_ok=True)
         files_dir = snap_dir / "files"

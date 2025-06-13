@@ -2,7 +2,7 @@ import argparse
 import os
 import re
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -32,7 +32,7 @@ LOG_DIR = Path("log")
 def get_log_file(script_name: str) -> Path:
     """Return a log file path inside LOG_DIR with timestamp."""
     LOG_DIR.mkdir(exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     return LOG_DIR / f"{script_name}_{timestamp}.log"
 
 

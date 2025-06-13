@@ -37,6 +37,20 @@ def repo_is_public(owner: str, repo: str) -> bool:
     return not data.get("private", True)
 
 
+def repo_status(cfg: dict) -> str:
+    """Return 'public' or 'private' for the repo specified in cfg."""
+    owner = cfg.get("github.owner") or cfg.get("github", {}).get("owner")
+    repo = cfg.get("github.repo") or cfg.get("github", {}).get("repo")
+    if not owner or not repo:
+        raise SystemExit(
+            "❌ github.owner and github.repo must be set in config\n"
+            "\n"
+            "Run 'workflow.py init' to generate a default configuration or copy\n"
+            "examples/.workflow-config-company.yaml.example and edit owner/repo."
+        )
+    return "public" if repo_is_public(owner, repo) else "private"
+
+
 def confirm(message: str) -> bool:
     resp = input(f"{message} [y/N]: ").strip().lower()
     return resp == "y"
@@ -120,6 +134,7 @@ def main() -> None:
     roll.add_argument("--dry-run", action="store_true")
     pull_parser = sub.add_parser("pull", help="Git pull with safety checks")
     pull_parser.add_argument("--force", action="store_true", help="Skip safety checks")
+    sub.add_parser("status", help="Show repository visibility")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Config file path")
     parser.add_argument("--dry-run", action="store_true", help="Print actions without making changes")
     args = parser.parse_args()
@@ -133,6 +148,10 @@ def main() -> None:
     elif args.command == "pull":
         cfg = load_config(MAIN_CONFIG)
         pull_repo(cfg, force=args.force)
+    elif args.command == "status":
+        cfg = load_config(MAIN_CONFIG)
+        vis = repo_status(cfg)
+        print(f"Repository is {vis}")
 
 
 if __name__ == "__main__":

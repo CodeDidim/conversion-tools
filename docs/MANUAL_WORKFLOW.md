@@ -7,6 +7,10 @@ Follow these steps when working with the private and public repositories.
 3. Develop and commit changes to your **private** repository.
 4. Before pushing publicly, run `workflow.py public` to revert private data.
 5. Verify no private data remains in the diff.
-6. Push the cleaned changes to GitHub.
+6. (Optional) Check whether the repository is currently public or private:
+   ```bash
+   python workflow.py status
+   ```
+7. Push the cleaned changes to GitHub.
 
 See `diagrams/manual-workflow.mermaid` for a visual overview of the process.

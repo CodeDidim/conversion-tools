@@ -2,6 +2,8 @@ from pathlib import Path
 import argparse
 import sys
 import subprocess
+import json
+from urllib import request
 from typing import Optional
 
 from core.rollback import RollbackManager
@@ -79,6 +81,30 @@ class WorkflowManager:
 
 def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     return load_profile(path)
+
+
+def repo_is_public(owner: str, repo: str) -> bool:
+    """Return True if the GitHub repo is public."""
+    url = f"https://api.github.com/repos/{owner}/{repo}"
+    req = request.Request(url, method="GET")
+    req.add_header("Accept", "application/vnd.github+json")
+    with request.urlopen(req) as resp:
+        data = json.load(resp)
+    return not data.get("private", True)
+
+
+def repo_status(cfg: dict) -> str:
+    """Return 'public' or 'private' based on GitHub visibility."""
+    owner = cfg.get("github.owner") or cfg.get("github", {}).get("owner")
+    repo = cfg.get("github.repo") or cfg.get("github", {}).get("repo")
+    if not owner or not repo:
+        raise SystemExit(
+            "❌ github.owner and github.repo must be set in config\n"
+            "\n"
+            "Run 'workflow.py init' to generate a default configuration or copy\n"
+            "examples/.workflow-config.yaml.example and edit owner/repo."
+        )
+    return "public" if repo_is_public(owner, repo) else "private"
 
 
 def private_workflow(
@@ -165,6 +191,7 @@ def main() -> None:
     roll.add_argument("--steps", type=int)
     roll.add_argument("--dry-run", action="store_true")
     sub.add_parser("clean-logs", help="Clean up old log files")
+    sub.add_parser("status", help="Show repository visibility")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -177,6 +204,10 @@ def main() -> None:
         _rollback_cli(args)
     elif args.command == "clean-logs":
         cleanup_logs(Path("log"), 30)
+    elif args.command == "status":
+        cfg = load_config(args.config)
+        vis = repo_status(cfg)
+        print(f"Repository is {vis}")
 
 
 if __name__ == "__main__":

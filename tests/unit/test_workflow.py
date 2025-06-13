@@ -57,3 +57,10 @@ def test_repo_status(monkeypatch):
     monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: False)
     assert workflow.repo_status(cfg) == "private"
 
+
+def test_repo_status_nested(monkeypatch):
+    cfg = {"github": {"owner": "o", "repo": "r"}}
+
+    monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: True)
+    assert workflow.repo_status(cfg) == "public"
+

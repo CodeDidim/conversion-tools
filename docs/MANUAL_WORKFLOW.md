@@ -1,6 +1,10 @@
 # Manual Workflow
 
 Follow these steps when working with the private and public repositories.
+Always make edits in the `template` directory. Convert to private when you need
+to test with real values and convert back to public before committing. Avoid
+editing `.workflow-temp/private` directly because the next run of the workflow
+will overwrite those files.
 
 1. Clone the repository and create or update `.workflow-config.yaml`.
 2. Run `workflow.py private` to inject private context.

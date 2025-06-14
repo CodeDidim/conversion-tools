@@ -6,14 +6,14 @@ import json
 import os
 import shutil
 from urllib import request
-from typing import Optional, Tuple, Set, Iterable, List
+from typing import Optional, Tuple, Set, Iterable, List, Dict
 import re
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
 from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
-from core.constants import TEXT_EXTENSIONS
+from core.constants import TEXT_EXTENSIONS, KEYWORDS
 from core.utils import is_binary_file
 from scripts.manage_logs import cleanup_logs
 from scripts.verify_public_export import verify_public_export
@@ -376,12 +376,139 @@ def validate_workflow_setup(config_path: Path = DEFAULT_CONFIG) -> bool:
     return not errors
 
 
+def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, List[str], List[str]]:
+    """Validate before running workflow.
+
+    Returns: (is_valid, errors, warnings)
+    """
+    errors: List[str] = []
+    warnings: List[str] = []
+
+    cfg: dict = {}
+    if not config_path.exists():
+        errors.append(f"Config file not found: {config_path}")
+        return False, errors, warnings
+
+    try:
+        cfg = load_profile(config_path)
+    except Exception as exc:
+        errors.append(str(exc))
+        return False, errors, warnings
+
+    template = Path(cfg.get("template", "template"))
+    profile_path = Path(cfg.get("profile", "profile.yaml"))
+    overlay = Path(cfg.get("overlay_dir", "private-overlay"))
+    temp_dir = Path(cfg.get("temp_dir", ".workflow-temp"))
+
+    if not template.exists():
+        errors.append(f"Template directory missing: {template}")
+    if not profile_path.exists():
+        errors.append(f"Profile file missing: {profile_path}")
+    if cfg.get("overlay_dir") and not overlay.exists():
+        warnings.append(f"Overlay directory missing: {overlay}")
+
+    try:
+        t = template.resolve()
+        o = overlay.resolve()
+        tmp = temp_dir.resolve()
+        if t == o or t == tmp or o == tmp:
+            errors.append("template, overlay_dir and temp_dir must be distinct paths")
+    except Exception:
+        pass
+
+    placeholder_styles: Set[str] = set()
+    placeholders: Set[str] = set()
+    if template.exists():
+        for root, _, files in os.walk(template):
+            for name in files:
+                path = Path(root) / name
+                if path.is_symlink():
+                    try:
+                        path = path.resolve(strict=True)
+                    except FileNotFoundError:
+                        continue
+                if is_binary_file(path):
+                    try:
+                        data = path.read_bytes()
+                    except Exception:
+                        data = b""
+                    if b"{{" in data and b"}}" in data:
+                        errors.append(f"Placeholder found in binary file: {path}")
+                    continue
+                try:
+                    text = path.read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    continue
+                if "{{ {{" in text:
+                    errors.append(f"Nested placeholder found in {path}")
+                for m in re.finditer(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}", text):
+                    key = m.group(1)
+                    placeholders.add(key)
+                    placeholder_styles.add(m.group(0).replace(key, "KEY"))
+                    if not re.fullmatch(r"[A-Z0-9_]+", key):
+                        warnings.append(f"Inconsistent placeholder '{key}' in {path}")
+        if len(placeholder_styles) > 1:
+            warnings.append("Inconsistent placeholder style used in template")
+
+    profile_data: Dict[str, str] = {}
+    if profile_path.exists():
+        try:
+            profile_data = load_profile(profile_path)
+        except Exception as exc:
+            errors.append(str(exc))
+        else:
+            for key, val in profile_data.items():
+                if isinstance(val, str) and re.search(r"\{\{.*\}\}", val):
+                    errors.append(f"Profile value for {key} contains placeholder syntax")
+                if not isinstance(val, str):
+                    warnings.append(f"Value for {key} converted to string")
+
+    if placeholders:
+        missing = placeholders - set(profile_data.keys())
+        if missing:
+            errors.append("Profile missing keys: " + ", ".join(sorted(missing)))
+
+    gitignore = Path(".gitignore")
+    if gitignore.exists():
+        lines = gitignore.read_text(encoding="utf-8").splitlines()
+        for entry in [".workflow-config.yaml", str(overlay)]:
+            if entry not in lines:
+                warnings.append(f"{entry} missing from .gitignore")
+    else:
+        warnings.append(".gitignore not found")
+
+    if template.exists():
+        for f in template.rglob("*"):
+            if f.is_file() and not is_binary_file(f):
+                txt = f.read_text(encoding="utf-8", errors="ignore")
+                if any(kw.lower() in txt.lower() for kw in KEYWORDS):
+                    errors.append(f"Private reference found in template: {f}")
+                    break
+
+    if overlay.exists() and Path(".git").exists():
+        res = subprocess.run(["git", "ls-files", str(overlay)], capture_output=True, text=True)
+        if res.stdout.strip():
+            errors.append("Overlay directory appears tracked by git")
+
+    if Path(".git").exists():
+        res = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+        if res.stdout.strip():
+            warnings.append("Git repository has uncommitted changes")
+
+    return not errors, errors, warnings
+
+
 def private_workflow(
     config_path: Path = DEFAULT_CONFIG,
     *,
     dry_run: bool = False,
 ) -> Path:
-    if not validate_workflow_setup(config_path):
+    valid, errors, warnings = validate_before_workflow(config_path, "private")
+    if not valid:
+        for e in errors:
+            print(f"❌ {e}")
+        for w in warnings:
+            print(f"⚠️  {w}")
         raise SystemExit("❌ Workflow validation failed")
 
     cfg = load_config(config_path)
@@ -473,7 +600,12 @@ def public_workflow(
     *,
     dry_run: bool = False,
 ) -> Path:
-    if not validate_workflow_setup(config_path):
+    valid, errors, warnings = validate_before_workflow(config_path, "public")
+    if not valid:
+        for e in errors:
+            print(f"❌ {e}")
+        for w in warnings:
+            print(f"⚠️  {w}")
         raise SystemExit("❌ Workflow validation failed")
 
     cfg = load_config(config_path)

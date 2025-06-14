@@ -73,6 +73,18 @@ class TestErrorScenarios:
         with pytest.raises(SystemExit):
             workflow.private_workflow(Path("missing.yaml"))
 
+    def test_missing_template_files(self, tmp_path):
+        """Workflow fails when template directory is absent"""
+        cfg = tmp_path / "config.yaml"
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("X: 1\n")
+        missing = tmp_path / "missing"
+        cfg.write_text(
+            f"profile: '{profile}'\ntemplate: '{missing}'\ntemp_dir: '{tmp_path}'\n"
+        )
+        with pytest.raises(SystemExit):
+            workflow.private_workflow(cfg)
+
     def test_corrupted_profile_yaml(self, tmp_path):
         """Test handling of malformed YAML profiles"""
         src = tmp_path / "src"

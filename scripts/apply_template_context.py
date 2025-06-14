@@ -17,7 +17,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.constants import TEXT_EXTENSIONS
-from core.utils import is_binary_file
+from core.utils import is_binary_file, sanitize_identifier
 
 
 LOG_DIR = Path("log")
@@ -215,34 +215,75 @@ def overlay_files(
 
 def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
     """Replace ``{{ KEY }}`` tokens in text files under ``base_dir``."""
+    # Create patterns for both regular and identifier-safe replacements
     patterns = {
         key: re.compile(r"\{\{\s*" + re.escape(key) + r"\s*\}\}")
         for key in mapping
     }
+
+    # Pre-compute sanitized versions for identifiers
+    sanitized_mapping = {
+        key: sanitize_identifier(value) if isinstance(value, str) else str(value)
+        for key, value in mapping.items()
+    }
+
     for root, dirs, files in os.walk(base_dir):
         for name in files:
             path = Path(root) / name
             if is_binary_file(path):
                 write_log(f"Skipping binary file {path}", log_file, verbose)
                 continue
+
             if path.suffix in TEXT_EXTENSIONS or path.name in TEXT_EXTENSIONS:
                 text = path.read_text(encoding="utf-8")
                 lines = text.splitlines(keepends=True)
                 changed = False
+
                 for i, line in enumerate(lines):
                     original = line
-                    for key, value in mapping.items():
-                        pattern = patterns[key]
-                        if pattern.search(line):
-                            line = pattern.sub(value, line)
-                            write_log(
-                                f"{path}:{i+1} {{{{ {key} }}}} -> {value}",
-                                log_file,
-                                verbose,
-                            )
+
+                    # Check if this line contains class/def with placeholder
+                    if path.suffix in {'.py', '.pyx', '.pyi'}:
+                        class_def_match = re.search(r'(class|def)\s+.*?\{\{\s*(\w+)\s*\}\}', line)
+                        if class_def_match:
+                            # Use sanitized version for identifiers
+                            for key, value in mapping.items():
+                                pattern = patterns[key]
+                                if pattern.search(line):
+                                    safe_value = sanitized_mapping[key]
+                                    line = pattern.sub(safe_value, line)
+                                    write_log(
+                                        f"{path}:{i+1} {{{{ {key} }}}} -> {safe_value} (identifier-safe)",
+                                        log_file,
+                                        verbose,
+                                    )
+                        else:
+                            # Normal replacement
+                            for key, value in mapping.items():
+                                pattern = patterns[key]
+                                if pattern.search(line):
+                                    line = pattern.sub(value, line)
+                                    write_log(
+                                        f"{path}:{i+1} {{{{ {key} }}}} -> {value}",
+                                        log_file,
+                                        verbose,
+                                    )
+                    else:
+                        # Non-Python files: normal replacement
+                        for key, value in mapping.items():
+                            pattern = patterns[key]
+                            if pattern.search(line):
+                                line = pattern.sub(value, line)
+                                write_log(
+                                    f"{path}:{i+1} {{{{ {key} }}}} -> {value}",
+                                    log_file,
+                                    verbose,
+                                )
+
                     if line != original:
                         lines[i] = line
                         changed = True
+
                 if changed:
                     path.write_text("".join(lines), encoding="utf-8")
 

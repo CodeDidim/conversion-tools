@@ -142,6 +142,32 @@ class TestTemplateConversions:
         assert "def run" in text
         assert "internal.example.com" in text
 
+    def test_identifier_sanitization_in_class_and_function_names(self, tmp_path):
+        """Values with invalid identifier characters are sanitized in defs"""
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
+        src.mkdir()
+
+        (src / "app.py").write_text(
+            "class {{ CLASS_NAME }}:\n"
+            "    def {{ FUNC_NAME }}(self):\n"
+            "        pass\n"
+            "# call {{ FUNC_NAME }}\n"
+        )
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text(
+            "CLASS_NAME: 123 My-Class\n"
+            "FUNC_NAME: run job\n"
+        )
+
+        inject_context(src, dst, profile)
+
+        text = (dst / "app.py").read_text()
+        assert "class My_Class" in text
+        assert "def run_job" in text
+        assert "# call run job" in text
+
     def test_complex_url_transformation(self, tmp_path):
         """Complex URLs with multiple placeholders"""
         src = tmp_path / "src"

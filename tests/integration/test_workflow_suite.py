@@ -29,10 +29,10 @@ def test_complete_workflow(tmp_path):
     assert (private_dir / "b.txt").read_text() == "B=2\n"
     assert (private_dir / "secret.txt").read_text() == "S=3\n"
 
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / "a.txt").read_text() == "A={{A}}\n"
-    assert (export_dir / "b.txt").read_text() == "B={{B}}\n"
-    assert not (export_dir / "secret.txt").exists()
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / "a.txt").read_text() == "A={{A}}\n"
+    assert (public_dir / "b.txt").read_text() == "B={{B}}\n"
+    assert not (public_dir / "secret.txt").exists()
 
 
 def test_edge_case_class_names(tmp_path):
@@ -51,8 +51,8 @@ def test_edge_case_class_names(tmp_path):
     private_dir = workflow.private_workflow(cfg)
     assert "class ACMECli" in (private_dir / "client.py").read_text()
 
-    export_dir = workflow.public_workflow(cfg)
-    assert "{{ COMPANY_NAME }}Client" in (export_dir / "client.py").read_text()
+    public_dir = workflow.public_workflow(cfg)
+    assert "{{ COMPANY_NAME }}Client" in (public_dir / "client.py").read_text()
 
 
 def test_binary_file_protection(tmp_path):
@@ -72,5 +72,5 @@ def test_binary_file_protection(tmp_path):
     private_dir = workflow.private_workflow(cfg)
     assert (private_dir / "file.bin").read_bytes() == data
 
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / "file.bin").read_bytes() == data
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / "file.bin").read_bytes() == data

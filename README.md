@@ -46,7 +46,7 @@ template: "template"
 overlay_dir: "private-overlay"  # optional private files
 ```
 The `overlay_dir` directory contains files that are only used in private mode.
-These files are automatically removed when exporting back to public mode.
+These files are automatically removed when creating the public version.
 See [docs/PRIVATE_OVERLAY.md](docs/PRIVATE_OVERLAY.md) for details.
 
 ## 🔒 Security Best Practices

@@ -115,3 +115,53 @@ class TestTemplateConversions:
         profile.write_text("A: '{{ A }}-done'")
         inject_context(src, dst, profile)
         assert (dst / "file.txt").read_text() == "A={{ A }}-done"
+
+    def test_placeholders_in_class_and_function_names(self, tmp_path):
+        """Placeholders can appear in Python identifiers"""
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
+        src.mkdir()
+
+        (src / "app.py").write_text(
+            "class {{ CLASS_NAME }}:\n"
+            "    def {{ FUNC_NAME }}(self):\n"
+            "        return '{{ DOMAIN }}'\n"
+        )
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text(
+            "CLASS_NAME: Service\n"
+            "FUNC_NAME: run\n"
+            "DOMAIN: internal.example.com\n"
+        )
+
+        inject_context(src, dst, profile)
+
+        text = (dst / "app.py").read_text()
+        assert "class Service" in text
+        assert "def run" in text
+        assert "internal.example.com" in text
+
+    def test_complex_url_transformation(self, tmp_path):
+        """Complex URLs with multiple placeholders"""
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
+        src.mkdir()
+
+        (src / "url.txt").write_text(
+            "https://{{ DOMAIN }}/api/{{ VERSION }}?token={{ TOKEN }}#ref"
+        )
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text(
+            "DOMAIN: example.com\n"
+            "VERSION: v1\n"
+            "TOKEN: abc123\n"
+        )
+
+        inject_context(src, dst, profile)
+
+        result = (dst / "url.txt").read_text()
+        assert "example.com" in result
+        assert "v1" in result
+        assert "abc123" in result

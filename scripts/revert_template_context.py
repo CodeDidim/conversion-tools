@@ -11,7 +11,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.constants import TEXT_EXTENSIONS
-from core.utils import is_binary_file
+from core.utils import is_binary_file, sanitize_identifier
 
 
 from scripts.apply_template_context import (
@@ -38,7 +38,15 @@ def replace_values_with_tokens(
         key: re.compile(r"(?<!\w)" + re.escape(mapping[key]) + r"(?!\w)")
         for key in ordered_keys
     }
-    patterns_simple = {key: re.compile(re.escape(mapping[key])) for key in ordered_keys}
+    patterns_simple = {}
+    for key in ordered_keys:
+        original = re.escape(mapping[key])
+        sanitized = re.escape(sanitize_identifier(mapping[key]))
+        if sanitized != mapping[key]:
+            pattern = re.compile(f"{original}|{sanitized}")
+        else:
+            pattern = re.compile(original)
+        patterns_simple[key] = pattern
     for root, _, files in os.walk(base_dir):
         for name in files:
             path = Path(root) / name
@@ -72,6 +80,29 @@ def replace_values_with_tokens(
                             start, end = m.start(), m.end()
                             before = line[start - 1] if start > 0 else ""
                             after = line[end] if end < len(line) else ""
+
+                            # Check if we're in a class/def line
+                            line_prefix = line[:start].strip()
+                            if any(line_prefix.endswith(kw) for kw in ['class', 'def']):
+                                # Always replace in identifier contexts
+                                write_log(
+                                    f"{path}:{i+1} {mapping[key]} -> {token} (identifier context)",
+                                    log_file,
+                                    verbose,
+                                )
+                                return token
+
+                            # Check for sanitized identifiers (e.g., "ACME_Corp" from "ACME Corp")
+                            sanitized_value = sanitize_identifier(mapping[key])
+                            if sanitized_value != mapping[key] and m.group(0) == sanitized_value:
+                                write_log(
+                                    f"{path}:{i+1} {sanitized_value} -> {token} (sanitized identifier)",
+                                    log_file,
+                                    verbose,
+                                )
+                                return token
+
+                            # Original smart replace logic
                             if before.isalnum() and after.isalnum():
                                 write_log(
                                     f"WARNING {path}:{i+1} partial match for {mapping[key]!r}",
@@ -79,6 +110,7 @@ def replace_values_with_tokens(
                                     verbose,
                                 )
                                 return m.group(0)
+
                             write_log(
                                 f"{path}:{i+1} {mapping[key]} -> {token} (smart)",
                                 log_file,

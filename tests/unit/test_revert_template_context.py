@@ -92,3 +92,60 @@ def test_exact_matching_requires_boundary(tmp_path):
     revert_context(private, public, profile, exact=True)
 
     assert (public / "note.txt").read_text() == "ACME CorpClient"
+
+
+def test_revert_class_and_function_identifiers(tmp_path):
+    generic = tmp_path / "generic"
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    generic.mkdir()
+
+    (generic / "app.py").write_text(
+        "class {{ COMPANY_NAME }}Client:\n"
+        "    def {{ FUNC_NAME }}(self):\n"
+        "        pass\n"
+    )
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text(
+        "COMPANY_NAME: ACME Corp\n"
+        "FUNC_NAME: run job\n"
+    )
+
+    inject_context(generic, private, profile)
+
+    private_text = (private / "app.py").read_text()
+    assert "class ACME_CorpClient:" in private_text
+    assert "def run_job(self):" in private_text
+
+    revert_context(private, public, profile)
+
+    expected = (
+        "class {{ COMPANY_NAME }}Client:\n"
+        "    def {{ FUNC_NAME }}(self):\n"
+        "        pass\n"
+    )
+    assert (public / "app.py").read_text() == expected
+
+
+def test_revert_partial_identifier_prefix(tmp_path):
+    generic = tmp_path / "generic"
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    generic.mkdir()
+
+    (generic / "app.py").write_text(
+        "class {{ USER }}Service:\n"
+        "    pass\n"
+    )
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("USER: admin\n")
+
+    inject_context(generic, private, profile)
+    assert (private / "app.py").read_text().startswith("class adminService:")
+
+    revert_context(private, public, profile)
+
+    expected = "class {{ USER }}Service:\n    pass\n"
+    assert (public / "app.py").read_text() == expected

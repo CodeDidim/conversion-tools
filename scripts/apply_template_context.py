@@ -17,6 +17,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.constants import TEXT_EXTENSIONS
+from core.utils import is_binary_file
 
 
 LOG_DIR = Path("log")
@@ -221,6 +222,9 @@ def replace_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verb
     for root, dirs, files in os.walk(base_dir):
         for name in files:
             path = Path(root) / name
+            if is_binary_file(path):
+                write_log(f"Skipping binary file {path}", log_file, verbose)
+                continue
             if path.suffix in TEXT_EXTENSIONS or path.name in TEXT_EXTENSIONS:
                 text = path.read_text(encoding="utf-8")
                 lines = text.splitlines(keepends=True)

@@ -81,6 +81,30 @@ class TestTemplateConversions:
         inject_context(src, dst, profile)
         assert (dst / "file.bin").read_bytes() == data
 
+    def test_binary_detection_by_extension(self, tmp_path):
+        """Files with known binary extensions are skipped"""
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
+        src.mkdir()
+        data = b"{{TOKEN}}"
+        (src / "program.exe").write_bytes(data)
+        profile = tmp_path / "p.yaml"
+        profile.write_text("TOKEN: replaced")
+        inject_context(src, dst, profile)
+        assert (dst / "program.exe").read_bytes() == data
+
+    def test_binary_detection_by_content(self, tmp_path):
+        """Binary content in text extension is not modified"""
+        src = tmp_path / "src"
+        dst = tmp_path / "dst"
+        src.mkdir()
+        data = b"\x00\x01{{TOKEN}}\x02"
+        (src / "weird.txt").write_bytes(data)
+        profile = tmp_path / "p.yaml"
+        profile.write_text("TOKEN: replaced")
+        inject_context(src, dst, profile)
+        assert (dst / "weird.txt").read_bytes() == data
+
     def test_circular_reference_prevention(self, tmp_path):
         """Value contains the placeholder itself"""
         src = tmp_path / "src"

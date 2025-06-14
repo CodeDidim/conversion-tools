@@ -248,11 +248,142 @@ def validate_profile(template_dir: Path, profile_path: Path) -> bool:
     return False
 
 
+def validate_workflow_setup(config_path: Path = DEFAULT_CONFIG) -> bool:
+    """Validate configuration, template, profile and safety checks."""
+    print("\n🔍 Validating workflow setup...\n")
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    auto_fix = os.getenv("CONVERSION_AUTO_FIX", "").lower() in {"1", "true", "yes"}
+
+    cfg: dict = {}
+    if not config_path.exists():
+        errors.append(f"Config file '{config_path}' not found")
+    else:
+        try:
+            cfg = load_profile(config_path)
+        except Exception as exc:
+            errors.append(str(exc))
+
+    required = ["template", "profile"]
+    for key in required:
+        if key not in cfg:
+            errors.append(f"Missing required config field: {key}")
+
+    template = Path(cfg.get("template", "template"))
+    profile_path = Path(cfg.get("profile", "profile.yaml"))
+    overlay = Path(cfg.get("overlay_dir", "private-overlay"))
+
+    if "template" in cfg and not template.exists():
+        errors.append(f"Template directory '{template}' not found (did you mean 'template'?)")
+    if "profile" in cfg and not profile_path.exists():
+        errors.append(f"Profile file '{profile_path}' not found")
+    if cfg.get("overlay_dir") and not overlay.exists():
+        warnings.append(f"Overlay directory '{overlay}' not found")
+
+    try:
+        t_res = template.resolve()
+        p_res = profile_path.resolve()
+        o_res = overlay.resolve()
+        if t_res in p_res.parents or p_res in t_res.parents:
+            errors.append("Circular reference between template and profile")
+        if o_res in t_res.parents or t_res in o_res.parents:
+            errors.append("Circular reference between template and overlay_dir")
+    except Exception:
+        pass
+
+    if profile_path.exists():
+        try:
+            pdata = load_profile(profile_path)
+        except Exception as exc:  # pragma: no cover - error message tested via return value
+            errors.append(str(exc))
+        else:
+            for key, val in pdata.items():
+                if isinstance(val, str) and re.search(r"\{\{.*\}\}", val):
+                    errors.append(f"Profile contains invalid placeholder syntax for {key}")
+                if not isinstance(val, str):
+                    warnings.append(f"Value for {key} converted to string")
+                trimmed = str(val).strip()
+                if trimmed.upper() in {"", "TODO", "FIXME"}:
+                    warnings.append(f"Profile missing value for: {key}")
+                if " " in key or "-" in key:
+                    warnings.append(f"Possible typo in key name: {key}")
+
+    if template.exists():
+        for f in template.rglob("*"):
+            if f.is_file():
+                if is_binary_file(f):
+                    try:
+                        text = f.read_text(encoding="utf-8")
+                    except Exception:
+                        text = ""
+                    if "{{" in text and "}}" in text:
+                        warnings.append(f"Placeholder in non-text file: {f}")
+                else:
+                    try:
+                        text = f.read_text(encoding="utf-8")
+                    except Exception:
+                        continue
+                    if "{{ {{" in text:
+                        errors.append(f"Nested placeholder found in {f}")
+                    for m in re.finditer(r"\{\{\s*([^\s{}]+)\s*\}\}", text):
+                        key = m.group(1)
+                        if not re.fullmatch(r"[A-Z0-9_]+", key):
+                            warnings.append(f"Inconsistent placeholder '{key}' in {f}")
+
+    gitignore = Path(".gitignore")
+    gitignore_lines: List[str] = []
+    if not gitignore.exists():
+        warnings.append(".gitignore not found")
+    else:
+        gitignore_lines = gitignore.read_text(encoding="utf-8").splitlines()
+
+    def ensure_ignored(entry: str) -> bool:
+        if entry not in gitignore_lines:
+            warnings.append(f"{entry} is not in .gitignore")
+            if auto_fix:
+                gitignore_lines.append(entry)
+                return True
+        return False
+
+    changed = False
+    changed |= ensure_ignored(".workflow-config.yaml")
+    changed |= ensure_ignored(str(overlay))
+
+    if changed and gitignore.exists():
+        gitignore.write_text("\n".join(gitignore_lines) + "\n", encoding="utf-8")
+
+    if overlay.exists() and Path(".git").exists():
+        res = subprocess.run(["git", "ls-files", str(overlay)], capture_output=True, text=True)
+        if res.stdout.strip():
+            errors.append("Private overlay files appear tracked by git")
+    if profile_path.exists() and Path(".git").exists():
+        res = subprocess.run(["git", "ls-files", str(profile_path)], capture_output=True, text=True)
+        if res.stdout.strip():
+            errors.append("Profile file appears tracked by git")
+
+    if errors:
+        print("❌ ERRORS (must fix):")
+        for e in errors:
+            print(f"- {e}")
+    if warnings:
+        print("⚠️  WARNINGS (recommended fixes):")
+        for w in warnings:
+            print(f"- {w}")
+    if auto_fix and changed:
+        print("✓ Auto-fixed .gitignore entries")
+
+    return not errors
+
+
 def private_workflow(
     config_path: Path = DEFAULT_CONFIG,
     *,
     dry_run: bool = False,
 ) -> Path:
+    if not validate_workflow_setup(config_path):
+        raise SystemExit("❌ Workflow validation failed")
+
     cfg = load_config(config_path)
     temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
     template = Path(cfg.get('template', 'template'))
@@ -342,6 +473,9 @@ def public_workflow(
     *,
     dry_run: bool = False,
 ) -> Path:
+    if not validate_workflow_setup(config_path):
+        raise SystemExit("❌ Workflow validation failed")
+
     cfg = load_config(config_path)
     temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
     template = Path(cfg.get('template', 'template'))

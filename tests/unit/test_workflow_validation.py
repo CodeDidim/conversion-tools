@@ -69,3 +69,19 @@ def test_validate_workflow_nested_placeholder(tmp_path):
     ok, errors, warnings = workflow.validate_before_workflow(cfg, "private")
     assert not ok
     assert any("nested" in e.lower() for e in errors)
+
+
+def test_validate_workflow_missing_key_locations(tmp_path):
+    cfg = tmp_path / "c.yaml"
+    template = tmp_path / "template"
+    profile = tmp_path / "p.yaml"
+    template.mkdir()
+    (template / "a.txt").write_text("first={{ONE}}\nsecond={{TWO}}\n")
+    profile.write_text("ONE: 1\n")
+    cfg.write_text(f"profile: '{profile}'\ntemplate: '{template}'\n")
+    ok, errors, warnings = workflow.validate_before_workflow(cfg, "private")
+    assert not ok
+    msg = ";".join(errors)
+    assert "TWO" in msg
+    assert str(template / "a.txt") in msg
+    assert ":2" in msg

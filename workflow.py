@@ -418,6 +418,7 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
 
     placeholder_styles: Set[str] = set()
     placeholders: Set[str] = set()
+    placeholder_map: Dict[str, List[Tuple[str, int]]] = {}
     if template.exists():
         for root, _, files in os.walk(template):
             for name in files:
@@ -441,12 +442,16 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
                     continue
                 if "{{ {{" in text:
                     errors.append(f"Nested placeholder found in {path}")
-                for m in re.finditer(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}", text):
-                    key = m.group(1)
-                    placeholders.add(key)
-                    placeholder_styles.add(m.group(0).replace(key, "KEY"))
-                    if not re.fullmatch(r"[A-Z0-9_]+", key):
-                        warnings.append(f"Inconsistent placeholder '{key}' in {path}")
+                for lineno, line in enumerate(text.splitlines(), 1):
+                    for m in re.finditer(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}", line):
+                        key = m.group(1)
+                        placeholders.add(key)
+                        placeholder_styles.add(m.group(0).replace(key, "KEY"))
+                        placeholder_map.setdefault(key, []).append((str(path), lineno))
+                        if not re.fullmatch(r"[A-Z0-9_]+", key):
+                            warnings.append(
+                                f"Inconsistent placeholder '{key}' in {path}"
+                            )
         if len(placeholder_styles) > 1:
             warnings.append("Inconsistent placeholder style used in template")
 
@@ -466,7 +471,15 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
     if placeholders:
         missing = placeholders - set(profile_data.keys())
         if missing:
-            errors.append("Profile missing keys: " + ", ".join(sorted(missing)))
+            details = []
+            for key in sorted(missing):
+                locs = placeholder_map.get(key, [])
+                loc_str = "; ".join(f"{p}:{ln}" for p, ln in locs)
+                if loc_str:
+                    details.append(f"{key} ({loc_str})")
+                else:
+                    details.append(key)
+            errors.append("Profile missing keys: " + ", ".join(details))
 
     gitignore = Path(".gitignore")
     if gitignore.exists():

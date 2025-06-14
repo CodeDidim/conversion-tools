@@ -6,7 +6,7 @@ import json
 import os
 import shutil
 from urllib import request
-from typing import Optional, Tuple, Set, Iterable
+from typing import Optional, Tuple, Set, Iterable, List
 import re
 
 from core.rollback import RollbackManager
@@ -263,40 +263,67 @@ def private_workflow(
         rollback_id = rollback_manager.create_snapshot('to_private', cfg)
         try:
             inject_context(template, dst, profile, overlay)
+            if overlay.exists():
+                _write_overlay_manifest(dst, overlay)
         except Exception:
             rollback_manager.rollback_to(rollback_id)
             raise
     return dst
 
 
-def _remove_overlay(public_dir: Path, template: Path, overlay: Path) -> None:
-    """Remove files introduced by the overlay from ``public_dir``."""
-    if not overlay.exists():
-        return
-
+def _write_overlay_manifest(dst: Path, overlay: Path) -> None:
+    """Write list of overlay files relative to ``dst``."""
+    manifest = dst / ".overlay_manifest"
+    lines = []
     for root, _, files in os.walk(overlay):
         for name in files:
             rel = Path(root) / name
             rel = rel.relative_to(overlay)
-            target = public_dir / rel
-            template_file = template / rel
+            lines.append(str(rel))
+    manifest.write_text("\n".join(lines), encoding="utf-8")
 
-            if template_file.exists():
-                if target.exists() or target.is_symlink():
-                    if target.is_dir() and not target.is_symlink():
-                        shutil.rmtree(target)
-                    else:
-                        target.unlink()
-                target.parent.mkdir(parents=True, exist_ok=True)
-                if template_file.is_symlink():
-                    target.symlink_to(os.readlink(template_file))
-                else:
-                    shutil.copy2(template_file, target)
-            else:
+
+def _read_overlay_manifest(private_dir: Path) -> Optional[List[Path]]:
+    manifest = private_dir / ".overlay_manifest"
+    if not manifest.exists():
+        return None
+    lines = [line.strip() for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [Path(line) for line in lines]
+
+
+def _remove_overlay(
+    public_dir: Path, template: Path, overlay: Path, overlay_files: Optional[Iterable[Path]] = None
+) -> None:
+    """Remove files introduced by the overlay from ``public_dir``."""
+    if overlay_files is None:
+        if not overlay.exists():
+            return
+        overlay_files = []
+        for root, _, files in os.walk(overlay):
+            for name in files:
+                rel = Path(root) / name
+                rel = rel.relative_to(overlay)
+                overlay_files.append(rel)
+
+    for rel in overlay_files:
+        target = public_dir / rel
+        template_file = template / rel
+        if template_file.exists():
+            if target.exists() or target.is_symlink():
                 if target.is_dir() and not target.is_symlink():
                     shutil.rmtree(target)
-                elif target.exists() or target.is_symlink():
+                else:
                     target.unlink()
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if template_file.is_symlink():
+                target.symlink_to(os.readlink(template_file))
+            else:
+                shutil.copy2(template_file, target)
+        else:
+            if target.is_dir() and not target.is_symlink():
+                shutil.rmtree(target)
+            elif target.exists() or target.is_symlink():
+                target.unlink()
 
     # Clean up empty directories that came from the overlay
     for root, dirs, files in os.walk(public_dir, topdown=False):
@@ -325,7 +352,8 @@ def public_workflow(
         rollback_id = rollback_manager.create_snapshot('to_public', cfg)
         try:
             revert_context(private_dir, public_dir, profile)
-            _remove_overlay(public_dir, template, overlay)
+            overlay_files = _read_overlay_manifest(private_dir)
+            _remove_overlay(public_dir, template, overlay, overlay_files)
             export_directory(public_dir, export_dir)
             validate_directory(export_dir)
         except Exception:

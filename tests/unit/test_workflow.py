@@ -3,6 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import workflow
+import shutil
 
 
 def test_private_public_cycle(tmp_path):
@@ -86,4 +87,31 @@ def test_overlay_override_removed(tmp_path):
 
     export_dir = workflow.public_workflow(cfg)
     assert (export_dir / 'a.txt').read_text() == 'orig={{A}}'
+
+
+def test_overlay_manifest_used_when_overlay_missing(tmp_path):
+    cfg = tmp_path / 'c.yaml'
+    profile = tmp_path / 'p.yaml'
+    template = tmp_path / 'template'
+    overlay = tmp_path / 'overlay'
+    work = tmp_path / 'work'
+    template.mkdir()
+    overlay.mkdir()
+    (template / 'base.txt').write_text('x={{X}}')
+    (overlay / 'secret.txt').write_text('s={{S}}')
+    profile.write_text('X: 1\nS: 2')
+    cfg.write_text(
+        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
+        f'template: "{template}"\n'
+    )
+
+    private_dir = workflow.private_workflow(cfg)
+    assert (private_dir / 'secret.txt').exists()
+    assert (private_dir / '.overlay_manifest').exists()
+
+    # Remove overlay directory before running public workflow
+    shutil.rmtree(overlay)
+
+    export_dir = workflow.public_workflow(cfg)
+    assert (export_dir / 'secret.txt').exists() is False
 

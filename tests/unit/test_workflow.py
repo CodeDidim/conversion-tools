@@ -89,7 +89,7 @@ def test_overlay_override_removed(tmp_path):
     assert (export_dir / 'a.txt').read_text() == 'orig={{A}}'
 
 
-def test_overlay_manifest_used_when_overlay_missing(tmp_path):
+def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
     cfg = tmp_path / 'c.yaml'
     profile = tmp_path / 'p.yaml'
     template = tmp_path / 'template'
@@ -112,6 +112,16 @@ def test_overlay_manifest_used_when_overlay_missing(tmp_path):
     # Remove overlay directory before running public workflow
     shutil.rmtree(overlay)
 
+    captured = {}
+    original_remove = workflow._remove_overlay
+
+    def spy(public_dir, template_dir, overlay_dir, overlay_files=None):
+        captured["files"] = overlay_files
+        return original_remove(public_dir, template_dir, overlay_dir, overlay_files)
+
+    monkeypatch.setattr(workflow, "_remove_overlay", spy)
+
     export_dir = workflow.public_workflow(cfg)
     assert (export_dir / 'secret.txt').exists() is False
+    assert captured.get("files") == [Path('secret.txt')]
 

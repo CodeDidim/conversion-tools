@@ -397,21 +397,21 @@ def private_workflow(
         try:
             inject_context(template, dst, profile, overlay)
             if overlay.exists():
-                _write_overlay_manifest(dst, overlay)
+                _write_overlay_manifest(overlay, dst)
         except Exception:
             rollback_manager.rollback_to(rollback_id)
             raise
     return dst
 
 
-def _write_overlay_manifest(dst: Path, overlay: Path) -> None:
-    """Write list of overlay files relative to ``dst``."""
-    manifest = dst / ".overlay_manifest"
+def _write_overlay_manifest(overlay_dir: Path, target_dir: Path) -> None:
+    """Write list of overlay files relative to ``target_dir``."""
+    manifest = target_dir / ".overlay_manifest"
     lines = []
-    for root, _, files in os.walk(overlay):
+    for root, _, files in os.walk(overlay_dir):
         for name in files:
             rel = Path(root) / name
-            rel = rel.relative_to(overlay)
+            rel = rel.relative_to(overlay_dir)
             lines.append(str(rel))
     manifest.write_text("\n".join(lines), encoding="utf-8")
 
@@ -481,6 +481,7 @@ def public_workflow(
     overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
     public_dir = temp_dir / 'public'
     export_dir = temp_dir / 'export'
+    private_dir = temp_dir / 'private'
 
     rollback_id = None
     if not dry_run:
@@ -489,7 +490,8 @@ def public_workflow(
             if public_dir.exists():
                 shutil.rmtree(public_dir)
             shutil.copytree(template, public_dir, symlinks=True)
-            _remove_overlay(public_dir, template, overlay)
+            overlay_files = _read_overlay_manifest(private_dir)
+            _remove_overlay(public_dir, template, overlay, overlay_files)
             export_directory(public_dir, export_dir)
             validate_directory(export_dir)
         except Exception:

@@ -2,6 +2,8 @@
 
 Safely manage public and private versions of your codebase using template substitution.
 
+Requires **Python 3.11** or newer. The project is tested against Python 3.11, 3.12, and 3.13.
+
 ## 🚀 Quick Start
 
 ### 1. Installation

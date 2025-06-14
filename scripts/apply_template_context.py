@@ -5,7 +5,7 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 
 try:
     import yaml  # type: ignore
@@ -35,6 +35,91 @@ def write_log(message: str, log_file: Path, verbose: bool) -> None:
         f.write(message + "\n")
     if verbose:
         print(message)
+
+
+def _get_key_line_numbers(content: str) -> Dict[str, int]:
+    """Return mapping of keys to line numbers for error reporting."""
+    mapping: Dict[str, int] = {}
+    for lineno, line in enumerate(content.splitlines(), 1):
+        line = line.split("#", 1)[0]
+        if ":" not in line:
+            continue
+        key = line.split(":", 1)[0].strip()
+        if key and key not in mapping:
+            mapping[key] = lineno
+    return mapping
+
+
+def validate_profile_values(
+    data: Dict[str, str], line_map: Dict[str, int], content: str, path: Path
+) -> None:
+    """Validate loaded profile values and optionally fix common issues."""
+
+    invalid: List[Tuple[str, str]] = []
+    fixes: Dict[str, str] = {}
+    warnings: List[str] = []
+
+    for key, value in data.items():
+        trimmed = value.strip()
+        if re.fullmatch(r"\{\{.*\}\}", trimmed):
+            inner = trimmed[2:-2].strip()
+            invalid.append((key, value))
+            fixes[key] = inner
+        elif trimmed == "":
+            warnings.append(f"Line {line_map.get(key, '?')}: {key} is empty")
+        elif trimmed.upper() in {"TODO", "FIXME"}:
+            warnings.append(
+                f"Line {line_map.get(key, '?')}: {key} has TODO value: {value}"
+            )
+        elif len(trimmed) > 300:
+            warnings.append(
+                f"Line {line_map.get(key, '?')}: {key} value is unusually long"
+            )
+        elif "\n" in trimmed or "\r" in trimmed:
+            warnings.append(
+                f"Line {line_map.get(key, '?')}: {key} contains newline characters"
+            )
+
+    for msg in warnings:
+        print(f"⚠️  {msg}")
+
+    if not invalid:
+        return
+
+    print("⚠️  Invalid profile entries detected:")
+    for key, value in invalid:
+        lineno = line_map.get(key, "?")
+        suggestion = fixes[key]
+        print(f"  Line {lineno}: {key} contains placeholder syntax: {value}")
+        print(f"           Did you mean: {key}: \"{suggestion}\"")
+
+    auto = os.getenv("CONVERSION_AUTO_FIX", "").lower() in {"1", "true", "yes"}
+    if auto or sys.stdin.isatty():
+        if not auto:
+            ans = input("Fix these issues? [Y/n]: ").strip().lower()
+            if ans not in {"", "y", "yes"}:
+                raise ValueError("Invalid profile entries")
+        lines = content.splitlines()
+        for key, new_val in fixes.items():
+            lineno = line_map.get(key)
+            if lineno is None:
+                continue
+            line = lines[lineno - 1]
+            comment = ""
+            if "#" in line:
+                base, comment = line.split("#", 1)
+            else:
+                base = line
+            indent = "" if base.startswith(key) else base[: base.index(key)] if key in base else ""
+            lines[lineno - 1] = f"{indent}{key}: {new_val}" + (f" #{comment}" if comment else "")
+            data[key] = new_val
+        text = "\n".join(lines)
+        if not text.endswith("\n"):
+            text += "\n"
+        path.write_text(text, encoding="utf-8")
+        return
+
+    raise ValueError("Invalid profile entries")
 
 
 def load_profile(path: Path) -> Dict[str, str]:
@@ -85,6 +170,9 @@ def load_profile(path: Path) -> Dict[str, str]:
                 )
             if not isinstance(value, str):
                 data[key] = str(value)
+
+    line_map = _get_key_line_numbers(content)
+    validate_profile_values(data, line_map, content, path)
 
     return data
 

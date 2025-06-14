@@ -24,6 +24,7 @@ def test_private_public_cycle(tmp_path):
 
     export_dir = workflow.public_workflow(cfg)
     assert (export_dir / 'a.txt').exists()
+    assert not (export_dir / 'b.txt').exists()
 
 
 def test_private_public_dry_run(tmp_path):
@@ -62,4 +63,27 @@ def test_repo_status_nested(monkeypatch):
 
     monkeypatch.setattr(workflow, "repo_is_public", lambda o, r: True)
     assert workflow.repo_status(cfg) == "public"
+
+
+def test_overlay_override_removed(tmp_path):
+    cfg = tmp_path / 'c.yaml'
+    profile = tmp_path / 'p.yaml'
+    template = tmp_path / 'template'
+    overlay = tmp_path / 'overlay'
+    work = tmp_path / 'work'
+    template.mkdir()
+    overlay.mkdir()
+    (template / 'a.txt').write_text('orig={{A}}')
+    (overlay / 'a.txt').write_text('private={{A}}')
+    profile.write_text('A: 1')
+    cfg.write_text(
+        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
+        f'template: "{template}"\n'
+    )
+
+    private_dir = workflow.private_workflow(cfg)
+    assert (private_dir / 'a.txt').read_text() == 'private=1'
+
+    export_dir = workflow.public_workflow(cfg)
+    assert (export_dir / 'a.txt').read_text() == 'orig={{A}}'
 

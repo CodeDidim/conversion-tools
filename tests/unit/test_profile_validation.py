@@ -3,6 +3,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import workflow
+from scripts.apply_template_context import load_profile
+import pytest
 
 
 def test_find_all_placeholders(tmp_path):
@@ -49,4 +51,23 @@ def test_validate_profile_with_ignore(tmp_path, monkeypatch):
     assert "TOKEN" not in lines
     assert "EMPTY_VALUE" not in lines
     assert "and" not in lines
+
+
+def test_load_profile_detect_invalid(tmp_path):
+    profile = tmp_path / "bad.yaml"
+    profile.write_text("KEY: {{bad}}\n")
+    with pytest.raises(ValueError):
+        load_profile(profile)
+
+
+def test_load_profile_auto_fix(tmp_path, monkeypatch):
+    profile = tmp_path / "auto.yaml"
+    profile.write_text("NAME: {{ Acme Corp }}\nEMPTY:\nTODO_VAL: TODO\n")
+    monkeypatch.setenv("CONVERSION_AUTO_FIX", "1")
+    data = load_profile(profile)
+    assert data["NAME"] == "Acme Corp"
+    assert data["EMPTY"] == ""
+    assert data["TODO_VAL"] == "TODO"
+    text = profile.read_text()
+    assert "{{" not in text
 

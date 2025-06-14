@@ -36,3 +36,29 @@ def test_no_partial_word_replacement(tmp_path):
 
     revert_context(private, public, profile)
     assert (public / "app.md").read_text() == "{{ USER }} badmington\n"
+
+
+def test_revert_longest_match(tmp_path):
+    generic = tmp_path / "generic"
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    generic.mkdir()
+
+    (generic / "config.py").write_text(
+        "BASE_URL = \"{{ INTERNAL_URL }}\"\nAPI_URL = \"{{ INTERNAL_URL }}/{{ API_VERSION }}\"\n"
+    )
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text(
+        "PROTO: https\nCOMPANY_DOMAIN: acme.com\nINTERNAL_URL: https://internal.acme.com\nAPI_VERSION: v2\n"
+    )
+
+    inject_context(generic, private, profile)
+
+    revert_context(private, public, profile)
+
+    expected = (
+        "BASE_URL = \"{{ INTERNAL_URL }}\"\n"
+        "API_URL = \"{{ INTERNAL_URL }}/{{ API_VERSION }}\"\n"
+    )
+    assert (public / "config.py").read_text() == expected

@@ -234,7 +234,11 @@ def validate_profile(template_dir: Path, profile_path: Path) -> bool:
             if ans not in {"", "y", "yes"}:
                 return False
         _append_missing_keys(profile_path, missing)
-        print(f"\u2713 Added {len(missing)} missing keys to profile (marked as TODO)")
+        full_path = profile_path.resolve()
+        plural = "s" if len(missing) != 1 else ""
+        print(
+            f"\u2713 Updated profile file: {full_path} - added {len(missing)} missing key{plural} (marked as TODO)"
+        )
         return True
 
     print("Run interactively or set CONVERSION_AUTO_APPEND=1 to update the profile automatically.")

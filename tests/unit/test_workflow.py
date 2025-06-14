@@ -4,6 +4,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import workflow
 import shutil
+import pytest
 
 
 def test_private_public_cycle(tmp_path):
@@ -121,7 +122,63 @@ def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr(workflow, "_remove_overlay", spy)
 
+    ver = {}
+
+    def fake_verify(t_dir, e_dir, manifest=None):
+        ver["manifest"] = manifest
+        return True
+
+    monkeypatch.setattr(workflow, "verify_public_export", fake_verify)
+
     export_dir = workflow.public_workflow(cfg)
     assert (export_dir / 'secret.txt').exists() is False
     assert captured.get("files") == [Path('secret.txt')]
+    assert ver.get("manifest") == [Path('secret.txt')]
+
+
+def test_public_workflow_runs_verification(tmp_path, monkeypatch):
+    cfg = tmp_path / 'c.yaml'
+    profile = tmp_path / 'p.yaml'
+    template = tmp_path / 'template'
+    work = tmp_path / 'work'
+    template.mkdir()
+    (template / 'a.txt').write_text('x={{X}}')
+    profile.write_text('X: 1')
+    cfg.write_text(
+        f'profile: "{profile}"\ntemp_dir: "{work}"\ntemplate: "{template}"\n'
+    )
+
+    captured = {}
+
+    def fake_verify(t_dir, e_dir, manifest=None):
+        captured['args'] = (t_dir, e_dir, manifest)
+        return True
+
+    monkeypatch.setattr(workflow, 'verify_public_export', fake_verify)
+
+    export_dir = workflow.public_workflow(cfg)
+
+    assert captured['args'][0] == template
+    assert captured['args'][1] == export_dir
+    assert captured['args'][2] is None
+
+
+def test_public_workflow_verification_failure(tmp_path, monkeypatch):
+    cfg = tmp_path / 'c.yaml'
+    profile = tmp_path / 'p.yaml'
+    template = tmp_path / 'template'
+    work = tmp_path / 'work'
+    template.mkdir()
+    (template / 'a.txt').write_text('x={{X}}')
+    profile.write_text('X: 1')
+    cfg.write_text(
+        f'profile: "{profile}"\ntemp_dir: "{work}"\ntemplate: "{template}"\n'
+    )
+
+    monkeypatch.setattr(workflow, 'verify_public_export', lambda *a, **k: False)
+
+    workflow.private_workflow(cfg)
+
+    with pytest.raises(SystemExit):
+        workflow.public_workflow(cfg)
 

@@ -7,7 +7,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import workflow
-import workflow_company
 from scripts.validate_public_repo import validate_directory
 from scripts.apply_template_context import inject_context
 
@@ -15,23 +14,6 @@ from scripts.apply_template_context import inject_context
 class TestErrorScenarios:
     """Test error handling and recovery"""
 
-    def test_pull_while_private(self, tmp_path):
-        """Attempt to pull at company while repo is private"""
-        cfg = {"github.owner": "o", "github.repo": "r"}
-
-        def fake_public(o, r):
-            return False
-
-        def fake_confirm(msg):
-            return False
-
-        monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(workflow_company, "repo_is_public", fake_public)
-        monkeypatch.setattr(workflow_company, "confirm", fake_confirm)
-
-        with pytest.raises(SystemExit):
-            workflow_company.pull_repo(cfg)
-        monkeypatch.undo()
 
     def test_push_with_secrets_exposed(self, tmp_path):
         """Attempt to push code that still contains secrets"""

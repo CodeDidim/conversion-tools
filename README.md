@@ -18,11 +18,6 @@ cp examples/.workflow-config.yaml.example .workflow-config.yaml
 export GITHUB_TOKEN='ghp_your_token_here'
 ```
 
-If you work without GitHub access, also copy the company example:
-```bash
-cp examples/.workflow-config-company.yaml.example .workflow-config-company.yaml
-```
-
 ### 3. Basic Usage
 **At Home**
 ```bash
@@ -32,18 +27,6 @@ python workflow.py private
 # Convert back to public before pushing
 python workflow.py public
 git push origin main
-```
-
-**At Company**
-```bash
-# Make repo public on your phone first!
-
-git pull origin main
-python workflow_company.py private
-# Work with real values...
-python workflow_company.py public
-git push origin main
-# Make repo private again on your phone
 ```
 
 ## 📁 Configuration
@@ -73,7 +56,7 @@ python workflow.py clean-logs
 ```
 - Check repository visibility:
 ```bash
-python workflow.py status  # or workflow_company.py status
+python workflow.py status
 ```
 This command now reports the full path to the configuration file before displaying
 the repository visibility. It also exits with an error if the specified config file

@@ -11,7 +11,6 @@ import re
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
-from scripts.revert_template_context import revert_context
 from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
 from core.constants import TEXT_EXTENSIONS
@@ -480,17 +479,17 @@ def public_workflow(
     temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
     template = Path(cfg.get('template', 'template'))
     overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
-    profile = Path(cfg.get('profile', 'scripts/config_profiles/company_profile.yaml'))
-    private_dir = temp_dir / 'private'
     public_dir = temp_dir / 'public'
     export_dir = temp_dir / 'export'
+
     rollback_id = None
     if not dry_run:
         rollback_id = rollback_manager.create_snapshot('to_public', cfg)
         try:
-            revert_context(private_dir, public_dir, profile)
-            overlay_files = _read_overlay_manifest(private_dir)
-            _remove_overlay(public_dir, template, overlay, overlay_files)
+            if public_dir.exists():
+                shutil.rmtree(public_dir)
+            shutil.copytree(template, public_dir, symlinks=True)
+            _remove_overlay(public_dir, template, overlay)
             export_directory(public_dir, export_dir)
             validate_directory(export_dir)
         except Exception:

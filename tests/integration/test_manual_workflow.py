@@ -33,7 +33,7 @@ class TestManualWorkflowEndToEnd:
         )
         private_dir = workflow.private_workflow(cfg)
         public_dir = workflow.public_workflow(cfg)
-        assert (public_dir / "app.txt").read_text() == "v={{ V }}"
+        assert (public_dir / "app.txt").read_text() == "v={{V}}"
 
     def test_multi_developer_collaboration(self, tmp_path):
         cfg = tmp_path / "config.yaml"
@@ -70,4 +70,4 @@ def test_manual_cycle(tmp_path):
 
     workflow.private_workflow(cfg)
     export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / "f.txt").read_text() == "z={{ Z }}\n"
+    assert (export_dir / "f.txt").read_text() == "z={{Z}}\n"

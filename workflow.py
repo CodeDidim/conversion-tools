@@ -16,6 +16,7 @@ from scripts.validate_public_repo import validate_directory
 from core.constants import TEXT_EXTENSIONS
 from core.utils import is_binary_file
 from scripts.manage_logs import cleanup_logs
+from scripts.verify_public_export import verify_public_export
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
 
@@ -494,6 +495,13 @@ def public_workflow(
             _remove_overlay(public_dir, template, overlay, overlay_files)
             export_directory(public_dir, export_dir)
             validate_directory(export_dir)
+            verify_files = (
+                [p for p in overlay_files if not (template / p).exists()]
+                if overlay_files
+                else None
+            )
+            if not verify_public_export(template, export_dir, verify_files):
+                raise SystemExit('❌ Public export verification failed')
         except Exception:
             rollback_manager.rollback_to(rollback_id)
             raise

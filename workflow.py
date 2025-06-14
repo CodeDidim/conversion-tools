@@ -3,6 +3,8 @@ import argparse
 import sys
 import subprocess
 import json
+import os
+import shutil
 from urllib import request
 from typing import Optional, Tuple
 
@@ -145,6 +147,44 @@ def private_workflow(
     return dst
 
 
+def _remove_overlay(public_dir: Path, template: Path, overlay: Path) -> None:
+    """Remove files introduced by the overlay from ``public_dir``."""
+    if not overlay.exists():
+        return
+
+    for root, _, files in os.walk(overlay):
+        for name in files:
+            rel = Path(root) / name
+            rel = rel.relative_to(overlay)
+            target = public_dir / rel
+            template_file = template / rel
+
+            if template_file.exists():
+                if target.exists() or target.is_symlink():
+                    if target.is_dir() and not target.is_symlink():
+                        shutil.rmtree(target)
+                    else:
+                        target.unlink()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if template_file.is_symlink():
+                    target.symlink_to(os.readlink(template_file))
+                else:
+                    shutil.copy2(template_file, target)
+            else:
+                if target.is_dir() and not target.is_symlink():
+                    shutil.rmtree(target)
+                elif target.exists() or target.is_symlink():
+                    target.unlink()
+
+    # Clean up empty directories that came from the overlay
+    for root, dirs, files in os.walk(public_dir, topdown=False):
+        path = Path(root)
+        try:
+            next(path.iterdir())
+        except StopIteration:
+            path.rmdir()
+
+
 def public_workflow(
     config_path: Path = DEFAULT_CONFIG,
     *,
@@ -152,6 +192,8 @@ def public_workflow(
 ) -> Path:
     cfg = load_config(config_path)
     temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
+    template = Path(cfg.get('template', 'template'))
+    overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
     profile = Path(cfg.get('profile', 'scripts/config_profiles/company_profile.yaml'))
     private_dir = temp_dir / 'private'
     public_dir = temp_dir / 'public'
@@ -161,6 +203,7 @@ def public_workflow(
         rollback_id = rollback_manager.create_snapshot('to_public', cfg)
         try:
             revert_context(private_dir, public_dir, profile)
+            _remove_overlay(public_dir, template, overlay)
             export_directory(public_dir, export_dir)
             validate_directory(export_dir)
         except Exception:

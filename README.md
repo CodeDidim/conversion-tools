@@ -37,7 +37,11 @@ repo: "your-repo"
 profile: "scripts/config_profiles/company_profile.yaml"
 temp_dir: ".workflow-temp"
 template: "template"
+overlay_dir: "private-overlay"  # optional private files
 ```
+The `overlay_dir` directory contains files that are only used in private mode.
+These files are automatically removed when exporting back to public mode.
+See [docs/PRIVATE_OVERLAY.md](docs/PRIVATE_OVERLAY.md) for details.
 
 ## 🔒 Security Best Practices
 - Never commit private values
@@ -70,4 +74,5 @@ does not exist.
 - [Security Model](docs/SECURITY.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Development Guide](docs/DEVELOPMENT.md)
+- [Private Overlay](docs/PRIVATE_OVERLAY.md)
 

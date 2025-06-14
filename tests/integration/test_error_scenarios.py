@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import subprocess
 import os
+import shutil
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -39,7 +40,7 @@ class TestErrorScenarios:
             raise RuntimeError("boom")
 
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(workflow, "revert_context", boom)
+        monkeypatch.setattr(shutil, "copytree", boom)
         with pytest.raises(RuntimeError):
             workflow.public_workflow(cfg)
         assert not (tmp_path / "public").exists()

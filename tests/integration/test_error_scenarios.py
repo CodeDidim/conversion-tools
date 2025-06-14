@@ -69,7 +69,7 @@ class TestErrorScenarios:
 
     def test_missing_config_file(self):
         """Test behavior when config files are missing"""
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(SystemExit):
             workflow.private_workflow(Path("missing.yaml"))
 
     def test_corrupted_profile_yaml(self, tmp_path):

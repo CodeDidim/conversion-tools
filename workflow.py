@@ -6,7 +6,7 @@ import json
 import os
 import shutil
 from urllib import request
-from typing import Optional, Tuple, Set, Iterable
+from typing import Optional, Tuple, Set, Iterable, List
 import re
 
 from core.rollback import RollbackManager
@@ -283,7 +283,7 @@ def _write_overlay_manifest(dst: Path, overlay: Path) -> None:
     manifest.write_text("\n".join(lines), encoding="utf-8")
 
 
-def _read_overlay_manifest(private_dir: Path) -> Optional[list[Path]]:
+def _read_overlay_manifest(private_dir: Path) -> Optional[List[Path]]:
     manifest = private_dir / ".overlay_manifest"
     if not manifest.exists():
         return None

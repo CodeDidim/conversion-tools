@@ -62,3 +62,33 @@ def test_revert_longest_match(tmp_path):
         "API_URL = \"{{ INTERNAL_URL }}/{{ API_VERSION }}\"\n"
     )
     assert (public / "config.py").read_text() == expected
+
+
+def test_smart_match_no_boundary(tmp_path):
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    private.mkdir()
+
+    (private / "note.txt").write_text("ACME CorpClient")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("COMPANY_NAME: ACME Corp\n")
+
+    revert_context(private, public, profile)
+
+    assert (public / "note.txt").read_text() == "{{ COMPANY_NAME }}Client"
+
+
+def test_exact_matching_requires_boundary(tmp_path):
+    private = tmp_path / "private"
+    public = tmp_path / "public"
+    private.mkdir()
+
+    (private / "note.txt").write_text("ACME CorpClient")
+
+    profile = tmp_path / "profile.yaml"
+    profile.write_text("COMPANY_NAME: ACME Corp\n")
+
+    revert_context(private, public, profile, exact=True)
+
+    assert (public / "note.txt").read_text() == "ACME CorpClient"

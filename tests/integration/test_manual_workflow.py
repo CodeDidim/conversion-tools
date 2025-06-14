@@ -52,11 +52,10 @@ class TestManualWorkflowEndToEnd:
         profile.write_text("V: 2\n")
         shutil.rmtree(tmp_path / "private", ignore_errors=True)
         shutil.rmtree(tmp_path / "public", ignore_errors=True)
-        shutil.rmtree(tmp_path / "export", ignore_errors=True)
         workflow.private_workflow(cfg)
         (tmp_path / "private" / "a.txt").write_text("changed2")
         workflow.public_workflow(cfg)
-        assert (tmp_path / "export" / "a.txt").exists()
+        assert (tmp_path / "public" / "a.txt").exists()
 
 
 def test_manual_cycle(tmp_path):
@@ -69,5 +68,5 @@ def test_manual_cycle(tmp_path):
     cfg.write_text(f"profile: \"{profile}\"\ntemp_dir: \"{tmp_path}\"\ntemplate: \"{template}\"\n")
 
     workflow.private_workflow(cfg)
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / "f.txt").read_text() == "z={{Z}}\n"
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / "f.txt").read_text() == "z={{Z}}\n"

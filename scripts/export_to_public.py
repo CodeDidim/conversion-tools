@@ -1,3 +1,5 @@
+"""Deprecated helper to remove private lines when building public code."""
+
 import argparse
 import os
 import shutil

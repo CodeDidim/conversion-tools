@@ -16,5 +16,5 @@ copied on top of the template before tokens are replaced.
 3. Run `python workflow.py private` to build the private working directory.
    The overlay files will be copied into the workspace before token substitution.
 
-Overlay files are ignored when exporting to public mode so they never appear in
+Overlay files are ignored when generating the public directory so they never appear in
 public repositories.

@@ -18,7 +18,7 @@ class TestErrorScenarios:
 
     def test_push_with_secrets_exposed(self, tmp_path):
         """Attempt to push code that still contains secrets"""
-        base = tmp_path / "export"
+        base = tmp_path / "public"
         base.mkdir()
         (base / "file.txt").write_text("email@company.com")
         assert not validate_directory(base)
@@ -63,7 +63,7 @@ class TestErrorScenarios:
             raise RuntimeError("conflict")
 
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(workflow, "export_directory", conflict)
+        monkeypatch.setattr(workflow, "verify_public_export", conflict)
         with pytest.raises(RuntimeError):
             workflow.public_workflow(cfg)
         monkeypatch.undo()

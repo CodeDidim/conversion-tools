@@ -24,9 +24,9 @@ def test_private_public_cycle(tmp_path):
     assert (private_dir / 'a.txt').read_text() == 'x=1\n'
     assert (private_dir / 'b.txt').read_text() == 'y=2\n'
 
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / 'a.txt').exists()
-    assert not (export_dir / 'b.txt').exists()
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / 'a.txt').exists()
+    assert not (public_dir / 'b.txt').exists()
 
 
 def test_private_public_dry_run(tmp_path):
@@ -47,8 +47,8 @@ def test_private_public_dry_run(tmp_path):
     private_dir = workflow.private_workflow(cfg, dry_run=True)
     assert private_dir.exists() is False
 
-    export_dir = workflow.public_workflow(cfg, dry_run=True)
-    assert export_dir.exists() is False
+    public_dir = workflow.public_workflow(cfg, dry_run=True)
+    assert public_dir.exists() is False
 
 
 def test_repo_status(monkeypatch):
@@ -86,8 +86,8 @@ def test_overlay_override_removed(tmp_path):
     private_dir = workflow.private_workflow(cfg)
     assert (private_dir / 'a.txt').read_text() == 'private=1'
 
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / 'a.txt').read_text() == 'orig={{A}}'
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / 'a.txt').read_text() == 'orig={{A}}'
 
 
 def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
@@ -130,8 +130,8 @@ def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr(workflow, "verify_public_export", fake_verify)
 
-    export_dir = workflow.public_workflow(cfg)
-    assert (export_dir / 'secret.txt').exists() is False
+    public_dir = workflow.public_workflow(cfg)
+    assert (public_dir / 'secret.txt').exists() is False
     assert captured.get("files") == [Path('secret.txt')]
     assert ver.get("manifest") == [Path('secret.txt')]
 
@@ -156,10 +156,10 @@ def test_public_workflow_runs_verification(tmp_path, monkeypatch):
 
     monkeypatch.setattr(workflow, 'verify_public_export', fake_verify)
 
-    export_dir = workflow.public_workflow(cfg)
+    public_dir = workflow.public_workflow(cfg)
 
     assert captured['args'][0] == template
-    assert captured['args'][1] == export_dir
+    assert captured['args'][1] == public_dir
     assert captured['args'][2] is None
 
 

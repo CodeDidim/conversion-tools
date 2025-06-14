@@ -11,7 +11,6 @@ import re
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
-from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
 from core.constants import TEXT_EXTENSIONS, KEYWORDS
 from core.utils import is_binary_file
@@ -656,7 +655,6 @@ def public_workflow(
     template = Path(cfg.get('template', 'template'))
     overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
     public_dir = temp_dir / 'public'
-    export_dir = temp_dir / 'export'
     private_dir = temp_dir / 'private'
 
     rollback_id = None
@@ -668,19 +666,18 @@ def public_workflow(
             shutil.copytree(template, public_dir, symlinks=True)
             overlay_files = _read_overlay_manifest(private_dir)
             _remove_overlay(public_dir, template, overlay, overlay_files)
-            export_directory(public_dir, export_dir)
-            validate_directory(export_dir)
+            validate_directory(public_dir)
             verify_files = (
                 [p for p in overlay_files if not (template / p).exists()]
                 if overlay_files
                 else None
             )
-            if not verify_public_export(template, export_dir, verify_files):
+            if not verify_public_export(template, public_dir, verify_files):
                 raise SystemExit('❌ Public export verification failed')
         except Exception:
             rollback_manager.rollback_to(rollback_id)
             raise
-    return export_dir
+    return public_dir
 
 
 def _rollback_cli(args: argparse.Namespace) -> None:

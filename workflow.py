@@ -127,9 +127,44 @@ def repo_status(cfg: dict) -> str:
     return "public" if repo_is_public(owner, repo) else "private"
 
 
-def find_all_placeholders(template_dir: Path) -> Set[str]:
-    """Return all unique ``{{ KEY }}`` placeholders found under ``template_dir``."""
+COMMON_WORDS = {"and", "the", "for", "or"}
+TEST_PATTERNS = ["TEST", "EMPTY", "DUMMY", "EXAMPLE", "TODO"]
+GENERIC_NAMES = {"TOKEN", "KEY", "VALUE", "SECRET"}
+
+
+def is_valid_placeholder(key: str) -> bool:
+    """Return True if ``key`` looks like a real placeholder."""
+    if len(key) < 3:
+        return False
+    if key.lower() in COMMON_WORDS:
+        return False
+    if any(p in key.upper() for p in TEST_PATTERNS):
+        return False
+    if key.upper() in GENERIC_NAMES:
+        return False
+    if key.islower():
+        return False
+    if re.search(r"[^A-Za-z0-9_]", key):
+        return False
+    return True
+
+
+def _load_placeholder_ignore(template_dir: Path) -> Set[str]:
+    """Return a set of placeholders listed in ``.placeholderignore``."""
+    ignore: Set[str] = set()
+    ignore_file = template_dir / ".placeholderignore"
+    if ignore_file.exists():
+        for line in ignore_file.read_text(encoding="utf-8").splitlines():
+            line = line.split("#", 1)[0].strip()
+            if line:
+                ignore.add(line)
+    return ignore
+
+
+def find_all_placeholders(template_dir: Path, ignore: Iterable[str] = ()) -> Set[str]:
+    """Return all unique valid ``{{ KEY }}`` placeholders found under ``template_dir``."""
     placeholders: Set[str] = set()
+    ignore_set = set(ignore)
     pattern = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
     for root, _, files in os.walk(template_dir):
         for name in files:
@@ -145,7 +180,11 @@ def find_all_placeholders(template_dir: Path) -> Set[str]:
                 except Exception:
                     continue
                 for match in pattern.finditer(text):
-                    placeholders.add(match.group(1))
+                    key = match.group(1)
+                    if key in ignore_set:
+                        continue
+                    if is_valid_placeholder(key):
+                        placeholders.add(key)
     return placeholders
 
 
@@ -167,8 +206,18 @@ def validate_profile(template_dir: Path, profile_path: Path) -> bool:
     variable is set to ``1``/``true``.
     """
 
-    required = find_all_placeholders(template_dir)
-    existing = set(load_profile(profile_path).keys())
+    profile_data = load_profile(profile_path)
+    ignore = _load_placeholder_ignore(template_dir)
+    extra = profile_data.get("ignore_placeholders")
+    if isinstance(extra, list):
+        ignore.update(str(x) for x in extra if isinstance(x, str))
+    elif isinstance(extra, str):
+        for item in extra.split(','):
+            item = item.strip()
+            if item:
+                ignore.add(item)
+    required = find_all_placeholders(template_dir, ignore)
+    existing = set(k for k in profile_data.keys() if k != "ignore_placeholders")
     missing = required - existing
 
     if not missing:

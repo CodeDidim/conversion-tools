@@ -2,11 +2,14 @@ name: CI
 on: [push, pull_request]
 jobs:
   test:
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: ${{ matrix.python-version }}
       - run: pip install -r requirements.txt
       - run: pytest -q

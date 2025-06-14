@@ -468,6 +468,36 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
                 if not isinstance(val, str):
                     warnings.append(f"Value for {key} converted to string")
 
+    # Add validation for placeholders in identifiers
+    identifier_errors = []
+    if template.exists() and profile_path.exists():
+        for root, _, files in os.walk(template):
+            for name in files:
+                path = Path(root) / name
+                if path.suffix in {'.py', '.pyx', '.pyi'}:  # Python files
+                    try:
+                        text = path.read_text(encoding="utf-8")
+                        # Check for placeholders in class/function definitions
+                        for match in re.finditer(r'(class|def)\s+.*?\{\{\s*(\w+)\s*\}\}', text):
+                            key = match.group(2)
+                            if key in profile_data:
+                                value = str(profile_data[key])
+                                # Check if value would create invalid identifier
+                                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', value.replace(' ', '')):
+                                    identifier_errors.append(
+                                        f"{path}: Placeholder '{key}' in {match.group(1)} name "
+                                        f"contains invalid identifier value: '{value}'"
+                                    )
+                                elif ' ' in value:
+                                    warnings.append(
+                                        f"{path}: Placeholder '{key}' in {match.group(1)} name "
+                                        f"contains spaces: '{value}' - consider using a separate identifier key"
+                                    )
+                    except Exception:
+                        continue
+
+    errors.extend(identifier_errors)
+
     if placeholders:
         missing = placeholders - set(profile_data.keys())
         if missing:

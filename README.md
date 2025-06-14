@@ -29,6 +29,12 @@ python workflow.py public
 git push origin main
 ```
 
+### Template Workflow
+Edit the files under `template/` that contain `{{ PLACEHOLDERS }}`. Run
+`python workflow.py private` whenever you need to test with real values and
+`python workflow.py public` before committing. Avoid editing
+`.workflow-temp/private` directly, as those files are regenerated.
+
 ## 📁 Configuration
 Create `.workflow-config.yaml`:
 ```yaml

@@ -24,9 +24,11 @@ from scripts.apply_template_context import (
 
 def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str], log_file: Path, verbose: bool) -> None:
     """Replace private values with ``{{ KEY }}`` tokens in text files."""
+    # Sort keys by value length so longer strings are replaced first.
+    ordered_keys = sorted(mapping, key=lambda k: len(mapping[k]), reverse=True)
     patterns = {
-        key: re.compile(r"\b" + re.escape(value) + r"\b")
-        for key, value in mapping.items()
+        key: re.compile(r"(?<!\w)" + re.escape(mapping[key]) + r"(?!\w)")
+        for key in ordered_keys
     }
     for root, _, files in os.walk(base_dir):
         for name in files:
@@ -37,12 +39,12 @@ def replace_values_with_tokens(base_dir: Path, mapping: Dict[str, str], log_file
                 changed = False
                 for i, line in enumerate(lines):
                     original = line
-                    for key, value in mapping.items():
+                    for key in ordered_keys:
                         token = f"{{{{ {key} }}}}"
                         pattern = patterns[key]
                         if pattern.search(line):
                             line = pattern.sub(token, line)
-                            write_log(f"{path}:{i+1} {value} -> {token}", log_file, verbose)
+                            write_log(f"{path}:{i+1} {mapping[key]} -> {token}", log_file, verbose)
                     if line != original:
                         lines[i] = line
                         changed = True

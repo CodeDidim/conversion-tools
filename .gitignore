@@ -1,13 +1,11 @@
 .pytest_cache/
 # Workflow Configuration
 .workflow-config.yaml
-.workflow-config-company.yaml
 .current-mode
 .workflow-temp/
 
 # Security-sensitive scripts
 workflow.py
-workflow_company.py
 
 # Private configuration
 conversion-tools/scripts/config_profiles/company_profile.yaml

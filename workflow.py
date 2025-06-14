@@ -6,13 +6,15 @@ import json
 import os
 import shutil
 from urllib import request
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Set, Iterable
+import re
 
 from core.rollback import RollbackManager
 from scripts.apply_template_context import inject_context, load_profile
 from scripts.revert_template_context import revert_context
 from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
+from core.constants import TEXT_EXTENSIONS
 from scripts.manage_logs import cleanup_logs
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
@@ -125,6 +127,71 @@ def repo_status(cfg: dict) -> str:
     return "public" if repo_is_public(owner, repo) else "private"
 
 
+def find_all_placeholders(template_dir: Path) -> Set[str]:
+    """Return all unique ``{{ KEY }}`` placeholders found under ``template_dir``."""
+    placeholders: Set[str] = set()
+    pattern = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
+    for root, _, files in os.walk(template_dir):
+        for name in files:
+            path = Path(root) / name
+            if path.is_symlink():
+                try:
+                    path = path.resolve(strict=True)
+                except FileNotFoundError:
+                    continue
+            if path.suffix in TEXT_EXTENSIONS or path.name in TEXT_EXTENSIONS:
+                try:
+                    text = path.read_text(encoding="utf-8")
+                except Exception:
+                    continue
+                for match in pattern.finditer(text):
+                    placeholders.add(match.group(1))
+    return placeholders
+
+
+def _append_missing_keys(profile_path: Path, keys: Iterable[str]) -> None:
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
+    newline = "" if not content or content.endswith("\n") else "\n"
+    with profile_path.open("a", encoding="utf-8") as f:
+        f.write(newline)
+        for key in sorted(keys):
+            f.write(f"{key}: TODO\n")
+
+
+def validate_profile(template_dir: Path, profile_path: Path) -> bool:
+    """Validate that profile contains keys for all placeholders.
+
+    Missing keys are reported and optionally appended to the profile when running
+    in an interactive session or when ``CONVERSION_AUTO_APPEND`` environment
+    variable is set to ``1``/``true``.
+    """
+
+    required = find_all_placeholders(template_dir)
+    existing = set(load_profile(profile_path).keys())
+    missing = required - existing
+
+    if not missing:
+        return True
+
+    print("\u26A0\uFE0F  Missing placeholders in profile:")
+    for key in sorted(missing):
+        print(f"  - {key}")
+
+    auto_env = os.getenv("CONVERSION_AUTO_APPEND", "").lower() in {"1", "true", "yes"}
+    if auto_env or sys.stdin.isatty():
+        if not auto_env:
+            ans = input(f"\nAppend to {profile_path.name}? [Y/n]: ").strip().lower()
+            if ans not in {"", "y", "yes"}:
+                return False
+        _append_missing_keys(profile_path, missing)
+        print(f"\u2713 Added {len(missing)} missing keys to profile (marked as TODO)")
+        return True
+
+    print("Run interactively or set CONVERSION_AUTO_APPEND=1 to update the profile automatically.")
+    return False
+
+
 def private_workflow(
     config_path: Path = DEFAULT_CONFIG,
     *,
@@ -136,6 +203,8 @@ def private_workflow(
     profile = Path(cfg.get('profile', 'scripts/config_profiles/company_profile.yaml'))
     overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
     dst = temp_dir / 'private'
+    if not validate_profile(template, profile):
+        raise SystemExit('❌ Profile validation failed')
     rollback_id = None
     if not dry_run:
         rollback_id = rollback_manager.create_snapshot('to_private', cfg)

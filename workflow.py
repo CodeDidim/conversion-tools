@@ -15,6 +15,7 @@ from scripts.revert_template_context import revert_context
 from scripts.export_to_public import export_directory
 from scripts.validate_public_repo import validate_directory
 from core.constants import TEXT_EXTENSIONS
+from core.utils import is_binary_file
 from scripts.manage_logs import cleanup_logs
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
@@ -174,6 +175,8 @@ def find_all_placeholders(template_dir: Path, ignore: Iterable[str] = ()) -> Set
                     path = path.resolve(strict=True)
                 except FileNotFoundError:
                     continue
+            if is_binary_file(path):
+                continue
             if path.suffix in TEXT_EXTENSIONS or path.name in TEXT_EXTENSIONS:
                 try:
                     text = path.read_text(encoding="utf-8")

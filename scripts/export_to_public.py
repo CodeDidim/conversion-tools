@@ -10,6 +10,7 @@ if __package__ is None:
 
 from scripts.apply_template_context import get_log_file, write_log
 from core.constants import KEYWORDS, TEXT_EXTENSIONS
+from core.utils import is_binary_file
 
 
 def should_filter_line(line: str) -> bool:
@@ -28,6 +29,10 @@ def should_filter_line(line: str) -> bool:
 def copy_and_clean_file(src: Path, dst: Path, log_file: Path, verbose: bool) -> None:
     """Copy ``src`` to ``dst`` removing lines with keywords for text files."""
     dst.parent.mkdir(parents=True, exist_ok=True)
+    if is_binary_file(src):
+        write_log(f"Skipping binary file {src}", log_file, verbose)
+        shutil.copy2(src, dst)
+        return
     if src.suffix in TEXT_EXTENSIONS:
         with src.open("r", errors="ignore") as f_src, dst.open("w") as f_dst:
             for lineno, line in enumerate(f_src, start=1):

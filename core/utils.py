@@ -1,5 +1,6 @@
 from __future__ import annotations
 import mimetypes
+import re
 from pathlib import Path
 from .constants import BINARY_EXTENSIONS, TEXT_EXTENSIONS
 
@@ -37,3 +38,45 @@ def is_binary_file(path: Path, sample_size: int = 2048) -> bool:
             return True
 
     return False
+
+
+def sanitize_identifier(value: str) -> str:
+    """Convert a value to a valid Python identifier.
+
+    Args:
+        value: String to sanitize
+
+    Returns:
+        Valid Python identifier
+
+    Examples:
+        >>> sanitize_identifier("ACME Corp")
+        'ACME_Corp'
+        >>> sanitize_identifier("123-test")
+        'test'
+        >>> sanitize_identifier("my-variable-name")
+        'my_variable_name'
+    """
+    # Replace non-alphanumeric with underscore
+    sanitized = re.sub(r'[^\w]', '_', value)
+
+    # Remove leading digits
+    sanitized = re.sub(r'^\d+', '', sanitized)
+
+    # Remove consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+
+    # Strip underscores from ends
+    sanitized = sanitized.strip('_')
+
+    # Ensure not empty or Python keyword
+    if not sanitized or sanitized in {'class', 'def', 'return', 'if', 'else', 'for', 'while', 'import', 'from'}:
+        sanitized = f'var_{sanitized}' if sanitized else 'unnamed'
+
+    return sanitized
+
+
+def is_valid_identifier(name: str) -> bool:
+    """Check if a string is a valid Python identifier."""
+    import keyword
+    return name.isidentifier() and not keyword.iskeyword(name)

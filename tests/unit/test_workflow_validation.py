@@ -127,3 +127,28 @@ def test_validate_workflow_identifier_spaces_warning(tmp_path):
     assert errors == []
     assert any("contains spaces" in w for w in warnings)
 
+
+def test_validate_workflow_private_reference(tmp_path):
+    cfg = tmp_path / "c.yaml"
+    template = tmp_path / "template"
+    profile = tmp_path / "p.yaml"
+    gitignore = tmp_path / ".gitignore"
+    template.mkdir()
+    content = "Email: support@company.com\nOrg: MY_ORGANIZATION_NAME\n"
+    (template / "info.txt").write_text(content)
+    profile.write_text("DUMMY: 1\n")
+    cfg.write_text(f"profile: '{profile}'\ntemplate: '{template}'\n")
+    gitignore.write_text(".workflow-config.yaml\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        ok, errors, warnings = workflow.validate_before_workflow(cfg, "private")
+    finally:
+        os.chdir(cwd)
+    assert not ok
+    msg = "\n".join(errors)
+    assert "support@company.com" in msg
+    assert "MY_ORGANIZATION_NAME" in msg
+    assert str(template / "info.txt") in msg
+    assert ":1" in msg and ":2" in msg
+

@@ -470,30 +470,52 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
     # Add validation for placeholders in identifiers
     identifier_errors = []
     if template.exists() and profile_path.exists():
+        class_def = re.compile(r'^\s*class\s+([^(:]+)', re.MULTILINE)
+        func_def = re.compile(r'^\s*(?:async\s+)?def\s+([^(:]+)', re.MULTILINE)
+        placeholder_pat = re.compile(r'\{\{\s*([A-Za-z0-9_]+)\s*\}\}')
+
         for root, _, files in os.walk(template):
             for name in files:
                 path = Path(root) / name
                 if path.suffix in {'.py', '.pyx', '.pyi'}:  # Python files
                     try:
                         text = path.read_text(encoding="utf-8")
-                        # Check for placeholders in class/function definitions
-                        for match in re.finditer(r'(class|def)\s+.*?\{\{\s*(\w+)\s*\}\}', text):
-                            key = match.group(2)
-                            if key in profile_data:
-                                value = str(profile_data[key])
-                                # Check if value would create invalid identifier
-                                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', value.replace(' ', '')):
-                                    identifier_errors.append(
-                                        f"{path}: Placeholder '{key}' in {match.group(1)} name "
-                                        f"contains invalid identifier value: '{value}'"
-                                    )
-                                elif ' ' in value:
-                                    warnings.append(
-                                        f"{path}: Placeholder '{key}' in {match.group(1)} name "
-                                        f"contains spaces: '{value}' - consider using a separate identifier key"
-                                    )
                     except Exception:
                         continue
+
+                    # Check class definitions
+                    for m in class_def.finditer(text):
+                        ident = m.group(1)
+                        for ph in placeholder_pat.finditer(ident):
+                            key = ph.group(1)
+                            if key not in profile_data:
+                                continue
+                            value = str(profile_data[key])
+                            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', value.replace(' ', '')):
+                                identifier_errors.append(
+                                    f"{path}: Placeholder '{key}' in class name contains invalid identifier value: '{value}'"
+                                )
+                            elif ' ' in value:
+                                warnings.append(
+                                    f"{path}: Placeholder '{key}' in class name contains spaces: '{value}' - consider using a separate identifier key"
+                                )
+
+                    # Check function definitions
+                    for m in func_def.finditer(text):
+                        ident = m.group(1)
+                        for ph in placeholder_pat.finditer(ident):
+                            key = ph.group(1)
+                            if key not in profile_data:
+                                continue
+                            value = str(profile_data[key])
+                            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', value.replace(' ', '')):
+                                identifier_errors.append(
+                                    f"{path}: Placeholder '{key}' in def name contains invalid identifier value: '{value}'"
+                                )
+                            elif ' ' in value:
+                                warnings.append(
+                                    f"{path}: Placeholder '{key}' in def name contains spaces: '{value}' - consider using a separate identifier key"
+                                )
 
     errors.extend(identifier_errors)
 

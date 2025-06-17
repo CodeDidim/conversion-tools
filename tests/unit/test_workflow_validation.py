@@ -127,3 +127,47 @@ def test_validate_workflow_identifier_spaces_warning(tmp_path):
     assert errors == []
     assert any("contains spaces" in w for w in warnings)
 
+
+def test_validate_workflow_function_identifier_error(tmp_path):
+    cfg = tmp_path / "c.yaml"
+    template = tmp_path / "template"
+    profile = tmp_path / "p.yaml"
+    gitignore = tmp_path / ".gitignore"
+    template.mkdir()
+    (template / "util.py").write_text("def get_{{ FUNC_NAME }}():\n    pass\n")
+    profile.write_text("FUNC_NAME: run-job\n")
+    cfg.write_text(f"profile: '{profile}'\ntemplate: '{template}'\n")
+    gitignore.write_text(".workflow-config.yaml\nprivate-overlay\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        ok, errors, warnings = workflow.validate_before_workflow(cfg, "private")
+    finally:
+        os.chdir(cwd)
+    assert not ok
+    assert any("invalid identifier" in e for e in errors)
+
+
+def test_validate_workflow_placeholder_in_string(tmp_path):
+    cfg = tmp_path / "c.yaml"
+    template = tmp_path / "template"
+    profile = tmp_path / "p.yaml"
+    gitignore = tmp_path / ".gitignore"
+    template.mkdir()
+    (template / "client.py").write_text(
+        "class Client:\n"
+        "    def __init__(self, cfg=\"{{ DEFAULT_CFG }}\"):\n"
+        "        pass\n"
+    )
+    profile.write_text("DEFAULT_CFG: config.yaml\n")
+    cfg.write_text(f"profile: '{profile}'\ntemplate: '{template}'\n")
+    gitignore.write_text(".workflow-config.yaml\nprivate-overlay\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        ok, errors, warnings = workflow.validate_before_workflow(cfg, "private")
+    finally:
+        os.chdir(cwd)
+    assert ok
+    assert errors == []
+

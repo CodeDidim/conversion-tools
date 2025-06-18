@@ -542,12 +542,9 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
         warnings.append(".gitignore not found")
 
     if template.exists():
-        for f in template.rglob("*"):
-            if f.is_file() and not is_binary_file(f):
-                txt = f.read_text(encoding="utf-8", errors="ignore")
-                if any(kw.lower() in txt.lower() for kw in KEYWORDS):
-                    errors.append(f"Private reference found in template: {f}")
-                    break
+        private_msg = _find_private_references(template)
+        if private_msg:
+            errors.append(private_msg)
 
     if overlay.exists() and Path(".git").exists():
         res = subprocess.run(["git", "ls-files", str(overlay)], capture_output=True, text=True)
@@ -657,6 +654,47 @@ def _remove_overlay(
             next(path.iterdir())
         except StopIteration:
             path.rmdir()
+
+
+def _find_private_references(template_dir: Path) -> Optional[str]:
+    """Return formatted error message if private keywords are found."""
+
+    hits: Dict[str, List[Tuple[int, str, str]]] = {}
+    for f in template_dir.rglob("*"):
+        if not f.is_file() or is_binary_file(f):
+            continue
+        try:
+            lines = f.read_text(encoding="utf-8", errors="ignore").splitlines()
+        except Exception:
+            continue
+        for idx, line in enumerate(lines, 1):
+            for kw in KEYWORDS:
+                if kw.lower() in line.lower():
+                    info = hits.setdefault(str(f), [])
+                    if len(info) < 3:
+                        info.append((idx, line, kw))
+                    break
+
+    if not hits:
+        return None
+
+    details: List[str] = ["Private references found in template files:"]
+    total = 0
+    for path, items in hits.items():
+        total += len(items)
+        for idx, line, kw in items:
+            text = line.strip()
+            if len(text) > 80:
+                text = text[:77] + "..."
+            details.append(f"  {path}:{idx}: {text}")
+            details.append(f"    → Found keyword: \"{kw}\"")
+            details.append("    → Fix: Replace with {{ PLACEHOLDER }} placeholder")
+        details.append("")
+    summary = f"Found {total} private reference{'s' if total != 1 else ''} across {len(hits)} file{'s' if len(hits) != 1 else ''}"
+    details.append(summary)
+    details.append("Run `python workflow.py validate` to check exports.")
+    details.append("See docs/DEVELOPMENT.md for template best practices.")
+    return "\n".join(details).rstrip()
 
 
 def public_workflow(

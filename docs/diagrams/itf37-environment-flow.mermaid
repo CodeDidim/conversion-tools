@@ -1,0 +1,12 @@
+flowchart TD
+    A[Developer] --> B{Environment?}
+    B -->|Company| C[Load company_profile.yaml]
+    B -->|Home| D[Load generic_profile.yaml]
+    C --> E[Private Configs]
+    D --> F[Generic Configs]
+    E --> G[Access Real Resources]
+    F --> H[Access Mock Services]
+    G --> I[Run Tests]
+    H --> I
+    I --> J[workflow.py public]
+    J --> K[Commit Templates]

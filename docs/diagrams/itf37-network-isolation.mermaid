@@ -1,0 +1,10 @@
+flowchart TD
+    subgraph Home_Network
+        A[Developer Laptop]
+        A --> B[Mock Services]
+    end
+    subgraph Company_Network
+        C[Developer Workstation]
+        C --> D[Internal Resources]
+    end
+    B -. no access .-> D

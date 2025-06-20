@@ -1,4 +1,4 @@
 .PHONY: test
 
 test:
-pytest -q
+	pytest -q

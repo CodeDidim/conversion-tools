@@ -50,14 +50,37 @@ class RollbackManager:
         files_list = self._run_git("ls-files")
         if not files_list:
             return
-        for rel in files_list.splitlines():
-            src = self.root_dir / rel
-            if src.exists():
-                target = dst / rel
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, target)
 
-    # ------------------------------------------------------------------
+        dst = Path(dst)
+
+        for rel in files_list.splitlines():
+            src = Path(self.root_dir) / rel
+
+            # Skip if source doesn't exist or is a directory/submodule
+            if not src.exists():
+                print(f"Warning: Tracked file not found, skipping: {rel}")
+                continue
+
+            if src.is_dir():
+                print(f"Skipping directory/submodule: {rel}")
+                continue
+
+            # Only process actual files
+            if src.is_file():
+                target = dst / rel
+
+                # Create all parent directories
+                target.parent.mkdir(parents=True, exist_ok=True)
+
+                # Copy the file with better error handling
+                try:
+                    shutil.copy2(str(src), str(target))
+                except Exception as e:
+                    print(f"Warning: Could not copy {src}: {e}")
+                    # Continue with other files instead of failing entirely
+            
+            
+# ------------------------------------------------------------------
     def create_snapshot(self, operation: str, config_snapshot: Optional[Dict] = None) -> str:
         # Use UTC so snapshot timestamps sort consistently regardless of local timezone
         ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")

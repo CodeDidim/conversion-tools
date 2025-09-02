@@ -10,26 +10,30 @@ class TestManualWorkflowEndToEnd:
 
     def test_home_to_company_flow(self, tmp_path):
         cfg = tmp_path / "config.yaml"
-        profile = tmp_path / "profile.yaml"
-        template = tmp_path / "template"
-        template.mkdir()
-        (template / "app.txt").write_text("v={{V}}")
-        profile.write_text("V: 1\n")
+        placeholder_values = tmp_path / "profile.yaml"
+        template_source_dir = tmp_path / "template"
+        template_source_dir.mkdir()
+        (template_source_dir / "app.txt").write_text("v={{V}}")
+        placeholder_values.write_text("V: 1\n")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemp_dir: \"{tmp_path}\"\ntemplate: \"{template}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
         )
         private_dir = workflow.private_workflow(cfg)
         assert (private_dir / "app.txt").read_text() == "v=1"
 
     def test_company_to_home_flow(self, tmp_path):
         cfg = tmp_path / "config.yaml"
-        profile = tmp_path / "profile.yaml"
-        template = tmp_path / "template"
-        template.mkdir()
-        (template / "app.txt").write_text("v={{V}}")
-        profile.write_text("V: 2\n")
+        placeholder_values = tmp_path / "profile.yaml"
+        template_source_dir = tmp_path / "template"
+        template_source_dir.mkdir()
+        (template_source_dir / "app.txt").write_text("v={{V}}")
+        placeholder_values.write_text("V: 2\n")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemp_dir: \"{tmp_path}\"\ntemplate: \"{template}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
         )
         private_dir = workflow.private_workflow(cfg)
         public_dir = workflow.public_workflow(cfg)
@@ -37,19 +41,21 @@ class TestManualWorkflowEndToEnd:
 
     def test_multi_developer_collaboration(self, tmp_path):
         cfg = tmp_path / "config.yaml"
-        profile = tmp_path / "profile.yaml"
-        template = tmp_path / "template"
-        template.mkdir()
-        (template / "a.txt").write_text("v={{V}}")
-        profile.write_text("V: 1\n")
+        placeholder_values = tmp_path / "profile.yaml"
+        template_source_dir = tmp_path / "template"
+        template_source_dir.mkdir()
+        (template_source_dir / "a.txt").write_text("v={{V}}")
+        placeholder_values.write_text("V: 1\n")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemp_dir: \"{tmp_path}\"\ntemplate: \"{template}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
         )
         workflow.private_workflow(cfg)
         (tmp_path / "private" / "a.txt").write_text("changed1")
         workflow.public_workflow(cfg)
 
-        profile.write_text("V: 2\n")
+        placeholder_values.write_text("V: 2\n")
         shutil.rmtree(tmp_path / "private", ignore_errors=True)
         shutil.rmtree(tmp_path / "public", ignore_errors=True)
         workflow.private_workflow(cfg)
@@ -60,12 +66,16 @@ class TestManualWorkflowEndToEnd:
 
 def test_manual_cycle(tmp_path):
     cfg = tmp_path / "config.yaml"
-    profile = tmp_path / "profile.yaml"
-    template = tmp_path / "template"
-    template.mkdir()
-    (template / "f.txt").write_text("z={{Z}}\n")
-    profile.write_text("Z: 9\n")
-    cfg.write_text(f"profile: \"{profile}\"\ntemp_dir: \"{tmp_path}\"\ntemplate: \"{template}\"\n")
+    placeholder_values = tmp_path / "profile.yaml"
+    template_source_dir = tmp_path / "template"
+    template_source_dir.mkdir()
+    (template_source_dir / "f.txt").write_text("z={{Z}}\n")
+    placeholder_values.write_text("Z: 9\n")
+    cfg.write_text(
+        f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+        f"working_directory: \"{tmp_path.as_posix()}\"\n"
+        f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
+    )
 
     workflow.private_workflow(cfg)
     public_dir = workflow.public_workflow(cfg)

@@ -42,12 +42,12 @@ Create `.workflow-config.yaml`:
 ```yaml
 owner: "yourusername"
 repo: "your-repo"
-profile: "scripts/config_profiles/company_profile.yaml"
-temp_dir: ".workflow-temp"
-template: "template"
-overlay_dir: "private-overlay"  # optional private files
+placeholder_values: "scripts/config_profiles/company_profile.yaml"
+working_directory: ".workflow-temp"
+template_source_dir: "template"
+company_only_files: "private-overlay"  # optional private files
 ```
-The `overlay_dir` directory contains files that are only used in private mode.
+The `company_only_files` directory contains files that are only used in private mode.
 These files are automatically removed when creating the public version.
 See [docs/PRIVATE_OVERLAY.md](docs/PRIVATE_OVERLAY.md) for details.
 

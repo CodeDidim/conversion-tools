@@ -9,16 +9,21 @@ import pytest
 
 def test_private_public_cycle(tmp_path):
     cfg = tmp_path / 'config.yaml'
-    profile = tmp_path / 'profile.yaml'
-    template = tmp_path / 'template'
-    overlay = tmp_path / 'overlay'
-    work = tmp_path / 'work'
-    template.mkdir()
-    overlay.mkdir()
-    (template / 'a.txt').write_text('x={{X}}\n')
-    (overlay / 'b.txt').write_text('y={{Y}}\n')
-    profile.write_text('X: 1\nY: 2\n')
-    cfg.write_text(f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\ntemplate: "{template}"\n')
+    placeholder_values = tmp_path / 'profile.yaml'
+    template_source_dir = tmp_path / 'template'
+    company_only_files = tmp_path / 'overlay'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    company_only_files.mkdir()
+    (template_source_dir / 'a.txt').write_text('x={{X}}\n')
+    (company_only_files / 'b.txt').write_text('y={{Y}}\n')
+    placeholder_values.write_text('X: 1\nY: 2\n')
+    cfg.write_text(
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'company_only_files: "{company_only_files.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
+    )
 
     private_dir = workflow.private_workflow(cfg)
     assert (private_dir / 'a.txt').read_text() == 'x=1\n'
@@ -31,17 +36,19 @@ def test_private_public_cycle(tmp_path):
 
 def test_private_public_dry_run(tmp_path):
     cfg = tmp_path / 'config.yaml'
-    profile = tmp_path / 'profile.yaml'
-    template = tmp_path / 'template'
-    overlay = tmp_path / 'overlay'
-    work = tmp_path / 'work'
-    template.mkdir()
-    overlay.mkdir()
-    (template / 'a.txt').write_text('x={{X}}\n')
-    profile.write_text('X: 1\n')
+    placeholder_values = tmp_path / 'profile.yaml'
+    template_source_dir = tmp_path / 'template'
+    company_only_files = tmp_path / 'overlay'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    company_only_files.mkdir()
+    (template_source_dir / 'a.txt').write_text('x={{X}}\n')
+    placeholder_values.write_text('X: 1\n')
     cfg.write_text(
-        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
-        f'template: "{template}"\n'
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'company_only_files: "{company_only_files.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
     )
 
     private_dir = workflow.private_workflow(cfg, dry_run=True)
@@ -69,18 +76,20 @@ def test_repo_status_nested(monkeypatch):
 
 def test_overlay_override_removed(tmp_path):
     cfg = tmp_path / 'c.yaml'
-    profile = tmp_path / 'p.yaml'
-    template = tmp_path / 'template'
-    overlay = tmp_path / 'overlay'
-    work = tmp_path / 'work'
-    template.mkdir()
-    overlay.mkdir()
-    (template / 'a.txt').write_text('orig={{A}}')
-    (overlay / 'a.txt').write_text('private={{A}}')
-    profile.write_text('A: 1')
+    placeholder_values = tmp_path / 'p.yaml'
+    template_source_dir = tmp_path / 'template'
+    company_only_files = tmp_path / 'overlay'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    company_only_files.mkdir()
+    (template_source_dir / 'a.txt').write_text('orig={{A}}')
+    (company_only_files / 'a.txt').write_text('private={{A}}')
+    placeholder_values.write_text('A: 1')
     cfg.write_text(
-        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
-        f'template: "{template}"\n'
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'company_only_files: "{company_only_files.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
     )
 
     private_dir = workflow.private_workflow(cfg)
@@ -92,18 +101,20 @@ def test_overlay_override_removed(tmp_path):
 
 def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
     cfg = tmp_path / 'c.yaml'
-    profile = tmp_path / 'p.yaml'
-    template = tmp_path / 'template'
-    overlay = tmp_path / 'overlay'
-    work = tmp_path / 'work'
-    template.mkdir()
-    overlay.mkdir()
-    (template / 'base.txt').write_text('x={{X}}')
-    (overlay / 'secret.txt').write_text('s={{S}}')
-    profile.write_text('X: 1\nS: 2')
+    placeholder_values = tmp_path / 'p.yaml'
+    template_source_dir = tmp_path / 'template'
+    company_only_files = tmp_path / 'overlay'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    company_only_files.mkdir()
+    (template_source_dir / 'base.txt').write_text('x={{X}}')
+    (company_only_files / 'secret.txt').write_text('s={{S}}')
+    placeholder_values.write_text('X: 1\nS: 2')
     cfg.write_text(
-        f'profile: "{profile}"\noverlay_dir: "{overlay}"\ntemp_dir: "{work}"\n'
-        f'template: "{template}"\n'
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'company_only_files: "{company_only_files.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
     )
 
     private_dir = workflow.private_workflow(cfg)
@@ -111,14 +122,14 @@ def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
     assert (private_dir / '.overlay_manifest').exists()
 
     # Remove overlay directory before running public workflow
-    shutil.rmtree(overlay)
+    shutil.rmtree(company_only_files)
 
     captured = {}
     original_remove = workflow._remove_overlay
 
-    def spy(public_dir, template_dir, overlay_dir, overlay_files=None):
+    def spy(public_dir, template_dir, company_only_files_dir, overlay_files=None):
         captured["files"] = overlay_files
-        return original_remove(public_dir, template_dir, overlay_dir, overlay_files)
+        return original_remove(public_dir, template_dir, company_only_files_dir, overlay_files)
 
     monkeypatch.setattr(workflow, "_remove_overlay", spy)
 
@@ -138,14 +149,16 @@ def test_overlay_manifest_used_when_overlay_missing(tmp_path, monkeypatch):
 
 def test_public_workflow_runs_verification(tmp_path, monkeypatch):
     cfg = tmp_path / 'c.yaml'
-    profile = tmp_path / 'p.yaml'
-    template = tmp_path / 'template'
-    work = tmp_path / 'work'
-    template.mkdir()
-    (template / 'a.txt').write_text('x={{X}}')
-    profile.write_text('X: 1')
+    placeholder_values = tmp_path / 'p.yaml'
+    template_source_dir = tmp_path / 'template'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    (template_source_dir / 'a.txt').write_text('x={{X}}')
+    placeholder_values.write_text('X: 1')
     cfg.write_text(
-        f'profile: "{profile}"\ntemp_dir: "{work}"\ntemplate: "{template}"\n'
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
     )
 
     captured = {}
@@ -158,21 +171,23 @@ def test_public_workflow_runs_verification(tmp_path, monkeypatch):
 
     public_dir = workflow.public_workflow(cfg)
 
-    assert captured['args'][0] == template
+    assert captured['args'][0] == template_source_dir
     assert captured['args'][1] == public_dir
     assert captured['args'][2] is None
 
 
 def test_public_workflow_verification_failure(tmp_path, monkeypatch):
     cfg = tmp_path / 'c.yaml'
-    profile = tmp_path / 'p.yaml'
-    template = tmp_path / 'template'
-    work = tmp_path / 'work'
-    template.mkdir()
-    (template / 'a.txt').write_text('x={{X}}')
-    profile.write_text('X: 1')
+    placeholder_values = tmp_path / 'p.yaml'
+    template_source_dir = tmp_path / 'template'
+    working_directory = tmp_path / 'work'
+    template_source_dir.mkdir()
+    (template_source_dir / 'a.txt').write_text('x={{X}}')
+    placeholder_values.write_text('X: 1')
     cfg.write_text(
-        f'profile: "{profile}"\ntemp_dir: "{work}"\ntemplate: "{template}"\n'
+        f'placeholder_values: "{placeholder_values.as_posix()}"\n'
+        f'working_directory: "{working_directory.as_posix()}"\n'
+        f'template_source_dir: "{template_source_dir.as_posix()}"\n'
     )
 
     monkeypatch.setattr(workflow, 'verify_public_export', lambda *a, **k: False)

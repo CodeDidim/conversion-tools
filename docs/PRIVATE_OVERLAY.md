@@ -11,7 +11,7 @@ copied on top of the template before tokens are replaced.
 ## How To Use
 1. Create a directory named `private-overlay` at the root of your repository.
    Mirror the layout of the files you want to override or add.
-2. In `.workflow-config.yaml` set the `overlay_dir` field if you use a custom
+2. In `.workflow-config.yaml` set the `company_only_files` field if you use a custom
    path. The default is `private-overlay`.
 3. Run `python workflow.py private` to build the private working directory.
    The overlay files will be copied into the workspace before token substitution.

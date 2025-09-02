@@ -1,7 +1,7 @@
 # Architecture
 
 The project consists only of local scripts. There is no server component.
-Files are converted by applying a profile and optional overlay before generating the public build.
+Files are converted by applying a placeholder values and optional overlay before generating the public build.
 
 ## Private Overlay
 See [PRIVATE_OVERLAY.md](PRIVATE_OVERLAY.md) for full details. In short, any

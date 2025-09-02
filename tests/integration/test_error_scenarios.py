@@ -26,13 +26,15 @@ class TestErrorScenarios:
     def test_interrupted_conversion(self, tmp_path):
         """Simulate crash during private->public conversion"""
         cfg = tmp_path / "c.yaml"
-        profile = tmp_path / "p.yaml"
-        template = tmp_path / "t"
-        template.mkdir()
-        (template / "a.txt").write_text("x={{X}}")
-        profile.write_text("X: 1")
+        placeholder_values = tmp_path / "p.yaml"
+        template_source_dir = tmp_path / "t"
+        template_source_dir.mkdir()
+        (template_source_dir / "a.txt").write_text("x={{X}}")
+        placeholder_values.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
         )
         workflow.private_workflow(cfg)
 
@@ -49,13 +51,15 @@ class TestErrorScenarios:
     def test_git_conflicts_during_conversion(self, tmp_path):
         """Create git conflicts then attempt conversion"""
         cfg = tmp_path / "c.yaml"
-        profile = tmp_path / "p.yaml"
-        template = tmp_path / "t"
-        template.mkdir()
-        (template / "a.txt").write_text("x={{X}}")
-        profile.write_text("X: 1")
+        placeholder_values = tmp_path / "p.yaml"
+        template_source_dir = tmp_path / "t"
+        template_source_dir.mkdir()
+        (template_source_dir / "a.txt").write_text("x={{X}}")
+        placeholder_values.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
         )
         workflow.private_workflow(cfg)
 
@@ -76,11 +80,13 @@ class TestErrorScenarios:
     def test_missing_template_files(self, tmp_path):
         """Workflow fails when template directory is absent"""
         cfg = tmp_path / "config.yaml"
-        profile = tmp_path / "profile.yaml"
-        profile.write_text("X: 1\n")
+        placeholder_values = tmp_path / "profile.yaml"
+        placeholder_values.write_text("X: 1\n")
         missing = tmp_path / "missing"
         cfg.write_text(
-            f"profile: '{profile}'\ntemplate: '{missing}'\ntemp_dir: '{tmp_path}'\n"
+            f"placeholder_values: '{placeholder_values.as_posix()}'\n"
+            f"template_source_dir: '{missing.as_posix()}'\n"
+            f"working_directory: '{tmp_path.as_posix()}'\n"
         )
         with pytest.raises(SystemExit):
             workflow.private_workflow(cfg)
@@ -91,21 +97,23 @@ class TestErrorScenarios:
         dst = tmp_path / "dst"
         src.mkdir()
         (src / "a.txt").write_text("v={{A}}")
-        profile = tmp_path / "p.yaml"
-        profile.write_text("A: 1\n: bad")
+        placeholder_values = tmp_path / "p.yaml"
+        placeholder_values.write_text("A: 1\n: bad")
         with pytest.raises(ValueError):
-            inject_context(src, dst, profile)
+            inject_context(src, dst, placeholder_values)
 
     def test_network_timeout_scenarios(self, tmp_path):
         """Test timeouts during git operations"""
         cfg = tmp_path / "c.yaml"
-        profile = tmp_path / "p.yaml"
-        template = tmp_path / "t"
-        template.mkdir()
-        (template / "a.txt").write_text("x={{X}}")
-        profile.write_text("X: 1")
+        placeholder_values = tmp_path / "p.yaml"
+        template_source_dir = tmp_path / "t"
+        template_source_dir.mkdir()
+        (template_source_dir / "a.txt").write_text("x={{X}}")
+        placeholder_values.write_text("X: 1")
         cfg.write_text(
-            f"profile: \"{profile}\"\ntemplate: \"{template}\"\ntemp_dir: \"{tmp_path}\"\n"
+            f"placeholder_values: \"{placeholder_values.as_posix()}\"\n"
+            f"template_source_dir: \"{template_source_dir.as_posix()}\"\n"
+            f"working_directory: \"{tmp_path.as_posix()}\"\n"
         )
 
         orig_run = subprocess.run
@@ -125,8 +133,8 @@ class TestErrorScenarios:
         src = tmp_path / "src"
         src.mkdir()
         (src / "a.txt").write_text("x={{X}}")
-        profile = tmp_path / "p.yaml"
-        profile.write_text("X: 1")
+        placeholder_values = tmp_path / "p.yaml"
+        placeholder_values.write_text("X: 1")
         dst = tmp_path / "out"
 
         orig_write_text = Path.write_text
@@ -139,7 +147,7 @@ class TestErrorScenarios:
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(Path, "write_text", deny)
         with pytest.raises(PermissionError):
-            inject_context(src, dst, profile)
+            inject_context(src, dst, placeholder_values)
         monkeypatch.undo()
 
     def test_disk_space_exhaustion(self, tmp_path):
@@ -148,8 +156,8 @@ class TestErrorScenarios:
         dst = tmp_path / "dst"
         src.mkdir()
         (src / "a.txt").write_text("x={{X}}")
-        profile = tmp_path / "p.yaml"
-        profile.write_text("X: 1")
+        placeholder_values = tmp_path / "p.yaml"
+        placeholder_values.write_text("X: 1")
 
         import errno
 
@@ -163,5 +171,5 @@ class TestErrorScenarios:
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(Path, "write_text", fail)
         with pytest.raises(OSError):
-            inject_context(src, dst, profile)
+            inject_context(src, dst, placeholder_values)
         monkeypatch.undo()

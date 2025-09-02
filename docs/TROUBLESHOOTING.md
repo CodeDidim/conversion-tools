@@ -1,6 +1,6 @@
 # Troubleshooting
 
-- If the public directory contains private data, ensure you reverted using the same profile used when injecting.
+- If the public directory contains private data, ensure you reverted using the same placeholder values used when injecting.
 - If `workflow.py` reports missing directories, copy the example configuration files again to recreate them.
 - When in doubt, delete the `.workflow-temp` directory and start again.
 
@@ -14,7 +14,7 @@ If you see syntax errors like `class ACME CorpClient:` after conversion:
    - `"123-test"` → `"test"` (removes leading digits)
    - Special characters are replaced with underscores
 
-3. **Best Practice**: Define separate keys for identifiers in your profile:
+3. **Best Practice**: Define separate keys for identifiers in your placeholder values:
    ```yaml
    COMPANY_NAME: "ACME Corp"  # For display
    COMPANY_CLASS: "ACMECorp"  # For class names

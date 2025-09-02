@@ -47,37 +47,45 @@ class RollbackManager:
         return hasher.hexdigest()
 
     def _copy_tracked_files(self, dst: Path) -> None:
+        """Copy tracked files with robust error handling."""
         files_list = self._run_git("ls-files")
         if not files_list:
             return
 
         dst = Path(dst)
+        successful_copies = 0
+        failed_copies = 0
 
         for rel in files_list.splitlines():
-            src = Path(self.root_dir) / rel
+            try:
+                src = self.root_dir / rel
 
-            # Skip if source doesn't exist or is a directory/submodule
-            if not src.exists():
-                print(f"Warning: Tracked file not found, skipping: {rel}")
+                # Skip if source doesn't exist
+                if not src.exists():
+                    print(f"Info: Tracked file not in working tree: {rel}")
+                    continue
+
+                # Skip directories
+                if src.is_dir():
+                    print(f"Info: Skipping directory: {rel}")
+                    continue
+
+                if src.is_file():
+                    target = dst / rel
+
+                    # Create parent directories
+                    target.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Copy file
+                    shutil.copy2(src, target)
+                    successful_copies += 1
+
+            except Exception as e:
+                failed_copies += 1
+                print(f"Warning: Could not copy {rel}: {e}")
                 continue
 
-            if src.is_dir():
-                print(f"Skipping directory/submodule: {rel}")
-                continue
-
-            # Only process actual files
-            if src.is_file():
-                target = dst / rel
-
-                # Create all parent directories
-                target.parent.mkdir(parents=True, exist_ok=True)
-
-                # Copy the file with better error handling
-                try:
-                    shutil.copy2(str(src), str(target))
-                except Exception as e:
-                    print(f"Warning: Could not copy {src}: {e}")
-                    # Continue with other files instead of failing entirely
+        print(f"Rollback snapshot: {successful_copies} files copied, {failed_copies} failed")
             
             
 # ------------------------------------------------------------------

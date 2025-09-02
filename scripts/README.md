@@ -10,7 +10,7 @@ validate that no sensitive information remains.
 ### `apply_template_context.py`
 
 Copies a generic project to a new location and replaces `{{ KEY }}`
-placeholders using values from a YAML profile. Tokens can include optional
+placeholders using values from a YAML placeholder values file. Tokens can include optional
 whitespace, so both `{{KEY}}` and `{{ KEY }}` forms are replaced. An optional overlay
 folder can be provided to apply company‑specific files on top of the
 base project.  Every run writes a timestamped log file to the `log/`
@@ -18,19 +18,19 @@ directory and an optional `--verbose` flag prints those log lines to the
 screen.
 
 ```
-python scripts/apply_template_context.py <src> <dst> <profile> [--overlay <dir>] [--verbose]
+python scripts/apply_template_context.py <src> <dst> <placeholder_values> [--overlay <dir>] [--verbose]
 ```
 
 ### `revert_template_context.py`
 
 Copies a private project to a new location and replaces private values with
-their original `{{ KEY }}` placeholders using the same YAML profile.  The
+their original `{{ KEY }}` placeholders using the same YAML placeholder values file.  The
 replacement now uses regular expressions with word boundaries to avoid
 matching partial words.  Logging behaviour mirrors that of
 `apply_template_context.py`, writing to `log/` and supporting `--verbose`.
 
 ```
-python scripts/revert_template_context.py <src> <dst> <profile> [--verbose]
+python scripts/revert_template_context.py <src> <dst> <placeholder_values> [--verbose]
 ```
 
 ### `export_to_public.py`
@@ -76,7 +76,7 @@ python scripts/manage_logs.py --cleanup --days 30
 
 ## Configuration Profiles
 
-Example YAML profiles can be found under `scripts/config_profiles/`.
+Example YAML placeholder values files can be found under `scripts/config_profiles/`.
 They map placeholder names to actual values used by
 `apply_template_context.py`.
 

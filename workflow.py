@@ -16,6 +16,7 @@ from core.constants import TEXT_EXTENSIONS, KEYWORDS
 from core.utils import is_binary_file
 from scripts.manage_logs import cleanup_logs
 from scripts.verify_public_export import verify_public_export
+import yaml
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
 
@@ -50,7 +51,7 @@ class WorkflowManager:
     def load_config(self) -> None:
         """Load configuration from the project directory."""
         if self.config_file.exists():
-            self.config = load_profile(self.config_file)
+            self.config = load_config(self.config_file)
         else:
             self.config = {}
 
@@ -62,7 +63,7 @@ class WorkflowManager:
         """Convert public code to private."""
         print("\n🔄 Converting to PRIVATE mode...")
 
-        temp_dir = self.root_dir / ".workflow-temp"
+        working_directory = self.root_dir / ".workflow-temp"
 
         # Apply private template
         print("→ Applying private templates...")
@@ -77,14 +78,32 @@ class WorkflowManager:
             sys.executable,
             str(apply_script),
             str(self.root_dir),
-            str(temp_dir),
-            str(self.conversion_tools_dir / self.config.get("profile", "")),
+            str(working_directory),
+            str(self.conversion_tools_dir / self.config.get("placeholder_values", "")),
             "--verbose",
         ]
         subprocess.run(cmd, check=True)
 
 def load_config(path: Path = DEFAULT_CONFIG) -> dict:
-    return load_profile(path)
+    config = yaml.safe_load(open(path))
+
+    if "profile" in config and "placeholder_values" not in config:
+        config["placeholder_values"] = config["profile"]
+        print("Warning: 'profile' is deprecated, use 'placeholder_values' instead")
+
+    if "template" in config and "template_source_dir" not in config:
+        config["template_source_dir"] = config["template"]
+        print("Warning: 'template' is deprecated, use 'template_source_dir' instead")
+
+    if "temp_dir" in config and "working_directory" not in config:
+        config["working_directory"] = config["temp_dir"]
+        print("Warning: 'temp_dir' is deprecated, use 'working_directory' instead")
+
+    if "overlay_dir" in config and "company_only_files" not in config:
+        config["company_only_files"] = config["overlay_dir"]
+        print("Warning: 'overlay_dir' is deprecated, use 'company_only_files' instead")
+
+    return config
 
 
 def repo_is_public(owner: str, repo: str) -> bool:

@@ -1,6 +1,7 @@
 # Simplified .workflow-config.yaml using a flat structure
 owner: "USERNAME"
 repo: "REPO"
-profile: "scripts/config_profiles/company_profile.yaml"
-temp_dir: ".workflow-temp"
-template: "template"
+placeholder_values: "config_profiles/company_profile.yaml"
+template_source_dir: "templated-code"
+working_directory: "conversion-tools/.workflow-temp"
+company_only_files: "private-overlay"

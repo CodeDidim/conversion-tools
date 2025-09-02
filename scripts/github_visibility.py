@@ -4,13 +4,31 @@ import argparse
 import json
 from urllib import request
 
-from scripts.apply_template_context import load_profile
+import yaml
 
 DEFAULT_CONFIG = Path('.workflow-config.yaml')
 
 
 def load_config(path: Path = DEFAULT_CONFIG) -> dict:
-    return load_profile(path)
+    config = yaml.safe_load(open(path))
+
+    if "profile" in config and "placeholder_values" not in config:
+        config["placeholder_values"] = config["profile"]
+        print("Warning: 'profile' is deprecated, use 'placeholder_values' instead")
+
+    if "template" in config and "template_source_dir" not in config:
+        config["template_source_dir"] = config["template"]
+        print("Warning: 'template' is deprecated, use 'template_source_dir' instead")
+
+    if "temp_dir" in config and "working_directory" not in config:
+        config["working_directory"] = config["temp_dir"]
+        print("Warning: 'temp_dir' is deprecated, use 'working_directory' instead")
+
+    if "overlay_dir" in config and "company_only_files" not in config:
+        config["company_only_files"] = config["overlay_dir"]
+        print("Warning: 'overlay_dir' is deprecated, use 'company_only_files' instead")
+
+    return config
 
 
 def set_visibility(owner: str, repo: str, make_private: bool, token: str) -> None:

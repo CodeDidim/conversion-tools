@@ -7,21 +7,24 @@ import workflow
 
 
 def test_complete_workflow(tmp_path):
-    template = tmp_path / "template"
-    template.mkdir()
-    (template / "a.txt").write_text("A={{A}}\n")
-    (template / "b.txt").write_text("B={{B}}\n")
+    template_source_dir = tmp_path / "template"
+    template_source_dir.mkdir()
+    (template_source_dir / "a.txt").write_text("A={{A}}\n")
+    (template_source_dir / "b.txt").write_text("B={{B}}\n")
 
-    overlay = tmp_path / "overlay"
-    overlay.mkdir()
-    (overlay / "secret.txt").write_text("S={{S}}\n")
+    company_only_files = tmp_path / "overlay"
+    company_only_files.mkdir()
+    (company_only_files / "secret.txt").write_text("S={{S}}\n")
 
-    profile = tmp_path / "profile.yaml"
-    profile.write_text("A: 1\nB: 2\nS: 3\n")
+    placeholder_values = tmp_path / "profile.yaml"
+    placeholder_values.write_text("A: 1\nB: 2\nS: 3\n")
 
     cfg = tmp_path / "config.yaml"
     cfg.write_text(
-        f"profile: '{profile}'\ntemp_dir: '{tmp_path}'\ntemplate: '{template}'\noverlay_dir: '{overlay}'\n"
+        f"placeholder_values: '{placeholder_values.as_posix()}'\n"
+        f"working_directory: '{tmp_path.as_posix()}'\n"
+        f"template_source_dir: '{template_source_dir.as_posix()}'\n"
+        f"company_only_files: '{company_only_files.as_posix()}'\n"
     )
 
     private_dir = workflow.private_workflow(cfg)
@@ -36,16 +39,18 @@ def test_complete_workflow(tmp_path):
 
 
 def test_edge_case_class_names(tmp_path):
-    template = tmp_path / "template"
-    template.mkdir()
-    (template / "client.py").write_text("class {{ COMPANY_NAME }}Client:\n    pass\n")
+    template_source_dir = tmp_path / "template"
+    template_source_dir.mkdir()
+    (template_source_dir / "client.py").write_text("class {{ COMPANY_NAME }}Client:\n    pass\n")
 
-    profile = tmp_path / "profile.yaml"
-    profile.write_text("COMPANY_NAME: ACME\n")
+    placeholder_values = tmp_path / "profile.yaml"
+    placeholder_values.write_text("COMPANY_NAME: ACME\n")
 
     cfg = tmp_path / "config.yaml"
     cfg.write_text(
-        f"profile: '{profile}'\ntemp_dir: '{tmp_path}'\ntemplate: '{template}'\n"
+        f"placeholder_values: '{placeholder_values.as_posix()}'\n"
+        f"working_directory: '{tmp_path.as_posix()}'\n"
+        f"template_source_dir: '{template_source_dir.as_posix()}'\n"
     )
 
     private_dir = workflow.private_workflow(cfg)
@@ -56,17 +61,19 @@ def test_edge_case_class_names(tmp_path):
 
 
 def test_binary_file_protection(tmp_path):
-    template = tmp_path / "template"
-    template.mkdir()
+    template_source_dir = tmp_path / "template"
+    template_source_dir.mkdir()
     data = b"\x00\x01\x02\x03"
-    (template / "file.bin").write_bytes(data)
+    (template_source_dir / "file.bin").write_bytes(data)
 
-    profile = tmp_path / "profile.yaml"
-    profile.write_text("TOKEN: secret\n")
+    placeholder_values = tmp_path / "profile.yaml"
+    placeholder_values.write_text("TOKEN: secret\n")
 
     cfg = tmp_path / "config.yaml"
     cfg.write_text(
-        f"profile: '{profile}'\ntemp_dir: '{tmp_path}'\ntemplate: '{template}'\n"
+        f"placeholder_values: '{placeholder_values.as_posix()}'\n"
+        f"working_directory: '{tmp_path.as_posix()}'\n"
+        f"template_source_dir: '{template_source_dir.as_posix()}'\n"
     )
 
     private_dir = workflow.private_workflow(cfg)

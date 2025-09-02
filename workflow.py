@@ -267,7 +267,7 @@ def validate_profile(template_dir: Path, profile_path: Path) -> bool:
 
 
 def validate_workflow_setup(config_path: Path = DEFAULT_CONFIG) -> bool:
-    """Validate configuration, template, profile and safety checks."""
+    """Validate configuration, template, placeholder values and safety checks."""
     print("\n🔍 Validating workflow setup...\n")
 
     errors: List[str] = []
@@ -279,51 +279,55 @@ def validate_workflow_setup(config_path: Path = DEFAULT_CONFIG) -> bool:
         errors.append(f"Config file '{config_path}' not found")
     else:
         try:
-            cfg = load_profile(config_path)
+            cfg = load_config(config_path)
         except Exception as exc:
             errors.append(str(exc))
 
-    required = ["template", "profile"]
+    required = ["template_source_dir", "placeholder_values"]
     for key in required:
         if key not in cfg:
             errors.append(f"Missing required config field: {key}")
 
-    template = Path(cfg.get("template", "template"))
-    profile_path = Path(cfg.get("profile", "profile.yaml"))
-    overlay = Path(cfg.get("overlay_dir", "private-overlay"))
+    template = Path(cfg.get("template_source_dir", "template"))
+    placeholder_values_path = Path(cfg.get("placeholder_values", "profile.yaml"))
+    company_only_files = Path(cfg.get("company_only_files", "private-overlay"))
 
-    if "template" in cfg and not template.exists():
-        errors.append(f"Template directory '{template}' not found (did you mean 'template'?)")
-    if "profile" in cfg and not profile_path.exists():
-        errors.append(f"Profile file '{profile_path}' not found")
-    if cfg.get("overlay_dir") and not overlay.exists():
-        warnings.append(f"Overlay directory '{overlay}' not found")
+    if "template_source_dir" in cfg and not template.exists():
+        errors.append(
+            f"Template directory '{template}' not found (did you mean 'template_source_dir'?)"
+        )
+    if "placeholder_values" in cfg and not placeholder_values_path.exists():
+        errors.append(f"Placeholder values file '{placeholder_values_path}' not found")
+    if cfg.get("company_only_files") and not company_only_files.exists():
+        warnings.append(f"Company-only files directory '{company_only_files}' not found")
 
     try:
         t_res = template.resolve()
-        p_res = profile_path.resolve()
-        o_res = overlay.resolve()
+        p_res = placeholder_values_path.resolve()
+        o_res = company_only_files.resolve()
         if t_res in p_res.parents or p_res in t_res.parents:
-            errors.append("Circular reference between template and profile")
+            errors.append("Circular reference between template_source_dir and placeholder_values")
         if o_res in t_res.parents or t_res in o_res.parents:
-            errors.append("Circular reference between template and overlay_dir")
+            errors.append("Circular reference between template_source_dir and company_only_files")
     except Exception:
         pass
 
-    if profile_path.exists():
+    if placeholder_values_path.exists():
         try:
-            pdata = load_profile(profile_path)
+            pdata = load_profile(placeholder_values_path)
         except Exception as exc:  # pragma: no cover - error message tested via return value
             errors.append(str(exc))
         else:
             for key, val in pdata.items():
                 if isinstance(val, str) and re.search(r"\{\{.*\}\}", val):
-                    errors.append(f"Profile contains invalid placeholder syntax for {key}")
+                    errors.append(
+                        f"Placeholder values file contains invalid placeholder syntax for {key}"
+                    )
                 if not isinstance(val, str):
                     warnings.append(f"Value for {key} converted to string")
                 trimmed = str(val).strip()
                 if trimmed.upper() in {"", "TODO", "FIXME"}:
-                    warnings.append(f"Profile missing value for: {key}")
+                    warnings.append(f"Placeholder values missing value for: {key}")
                 if " " in key or "-" in key:
                     warnings.append(f"Possible typo in key name: {key}")
 
@@ -366,19 +370,23 @@ def validate_workflow_setup(config_path: Path = DEFAULT_CONFIG) -> bool:
 
     changed = False
     changed |= ensure_ignored(".workflow-config.yaml")
-    changed |= ensure_ignored(str(overlay))
+    changed |= ensure_ignored(str(company_only_files))
 
     if changed and gitignore.exists():
         gitignore.write_text("\n".join(gitignore_lines) + "\n", encoding="utf-8")
 
-    if overlay.exists() and Path(".git").exists():
-        res = subprocess.run(["git", "ls-files", str(overlay)], capture_output=True, text=True)
+    if company_only_files.exists() and Path(".git").exists():
+        res = subprocess.run(
+            ["git", "ls-files", str(company_only_files)], capture_output=True, text=True
+        )
         if res.stdout.strip():
-            errors.append("Private overlay files appear tracked by git")
-    if profile_path.exists() and Path(".git").exists():
-        res = subprocess.run(["git", "ls-files", str(profile_path)], capture_output=True, text=True)
+            errors.append("Company-only files directory appears tracked by git")
+    if placeholder_values_path.exists() and Path(".git").exists():
+        res = subprocess.run(
+            ["git", "ls-files", str(placeholder_values_path)], capture_output=True, text=True
+        )
         if res.stdout.strip():
-            errors.append("Profile file appears tracked by git")
+            errors.append("Placeholder values file appears tracked by git")
 
     if errors:
         print("❌ ERRORS (must fix):")
@@ -408,29 +416,31 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
         return False, errors, warnings
 
     try:
-        cfg = load_profile(config_path)
+        cfg = load_config(config_path)
     except Exception as exc:
         errors.append(str(exc))
         return False, errors, warnings
 
-    template = Path(cfg.get("template", "template"))
-    profile_path = Path(cfg.get("profile", "profile.yaml"))
-    overlay = Path(cfg.get("overlay_dir", "private-overlay"))
-    temp_dir = Path(cfg.get("temp_dir", ".workflow-temp"))
+    template = Path(cfg.get("template_source_dir", "template"))
+    placeholder_values_path = Path(cfg.get("placeholder_values", "profile.yaml"))
+    company_only_files = Path(cfg.get("company_only_files", "private-overlay"))
+    working_directory = Path(cfg.get("working_directory", ".workflow-temp"))
 
     if not template.exists():
         errors.append(f"Template directory missing: {template}")
-    if not profile_path.exists():
-        errors.append(f"Profile file missing: {profile_path}")
-    if cfg.get("overlay_dir") and not overlay.exists():
-        warnings.append(f"Overlay directory missing: {overlay}")
+    if not placeholder_values_path.exists():
+        errors.append(f"Placeholder values file missing: {placeholder_values_path}")
+    if cfg.get("company_only_files") and not company_only_files.exists():
+        warnings.append(f"Company-only files directory missing: {company_only_files}")
 
     try:
         t = template.resolve()
-        o = overlay.resolve()
-        tmp = temp_dir.resolve()
+        o = company_only_files.resolve()
+        tmp = working_directory.resolve()
         if t == o or t == tmp or o == tmp:
-            errors.append("template, overlay_dir and temp_dir must be distinct paths")
+            errors.append(
+                "template_source_dir, company_only_files and working_directory must be distinct paths"
+            )
     except Exception:
         pass
 
@@ -474,21 +484,21 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
             warnings.append("Inconsistent placeholder style used in template")
 
     profile_data: Dict[str, str] = {}
-    if profile_path.exists():
+    if placeholder_values_path.exists():
         try:
-            profile_data = load_profile(profile_path)
+            profile_data = load_profile(placeholder_values_path)
         except Exception as exc:
             errors.append(str(exc))
         else:
             for key, val in profile_data.items():
                 if isinstance(val, str) and re.search(r"\{\{.*\}\}", val):
-                    errors.append(f"Profile value for {key} contains placeholder syntax")
+                    errors.append(f"Placeholder values for {key} contains placeholder syntax")
                 if not isinstance(val, str):
                     warnings.append(f"Value for {key} converted to string")
 
     # Add validation for placeholders in identifiers
     identifier_errors = []
-    if template.exists() and profile_path.exists():
+    if template.exists() and placeholder_values_path.exists():
         class_def = re.compile(r'^\s*class\s+([^(:]+)', re.MULTILINE)
         func_def = re.compile(r'^\s*(?:async\s+)?def\s+([^(:]+)', re.MULTILINE)
         placeholder_pat = re.compile(r'\{\{\s*([A-Za-z0-9_]+)\s*\}\}')
@@ -554,7 +564,7 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
     gitignore = Path(".gitignore")
     if gitignore.exists():
         lines = gitignore.read_text(encoding="utf-8").splitlines()
-        for entry in [".workflow-config.yaml", str(overlay)]:
+        for entry in [".workflow-config.yaml", str(company_only_files)]:
             if entry not in lines:
                 warnings.append(f"{entry} missing from .gitignore")
     else:
@@ -565,10 +575,12 @@ def validate_before_workflow(config_path: Path, operation: str) -> Tuple[bool, L
         if private_msg:
             errors.append(private_msg)
 
-    if overlay.exists() and Path(".git").exists():
-        res = subprocess.run(["git", "ls-files", str(overlay)], capture_output=True, text=True)
+    if company_only_files.exists() and Path(".git").exists():
+        res = subprocess.run(
+            ["git", "ls-files", str(company_only_files)], capture_output=True, text=True
+        )
         if res.stdout.strip():
-            errors.append("Overlay directory appears tracked by git")
+            errors.append("Company-only files directory appears tracked by git")
 
     if Path(".git").exists():
         res = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
@@ -592,34 +604,36 @@ def private_workflow(
         raise SystemExit("❌ Workflow validation failed")
 
     cfg = load_config(config_path)
-    temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
-    template = Path(cfg.get('template', 'template'))
-    profile = Path(cfg.get('profile', 'scripts/config_profiles/company_profile.yaml'))
-    overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
-    dst = temp_dir / 'private'
-    if not validate_profile(template, profile):
+    working_directory = Path(cfg.get('working_directory', '.workflow-temp'))
+    template_source_dir = Path(cfg.get('template_source_dir', 'template'))
+    placeholder_values = Path(
+        cfg.get('placeholder_values', 'scripts/config_profiles/company_profile.yaml')
+    )
+    company_only_files = Path(cfg.get('company_only_files', 'private-overlay'))
+    dst = working_directory / 'private'
+    if not validate_profile(template_source_dir, placeholder_values):
         raise SystemExit('❌ Profile validation failed')
     rollback_id = None
     if not dry_run:
         rollback_id = rollback_manager.create_snapshot('to_private', cfg)
         try:
-            inject_context(template, dst, profile, overlay)
-            if overlay.exists():
-                _write_overlay_manifest(overlay, dst)
+            inject_context(template_source_dir, dst, placeholder_values, company_only_files)
+            if company_only_files.exists():
+                _write_overlay_manifest(company_only_files, dst)
         except Exception:
             rollback_manager.rollback_to(rollback_id)
             raise
     return dst
 
 
-def _write_overlay_manifest(overlay_dir: Path, target_dir: Path) -> None:
-    """Write list of overlay files relative to ``target_dir``."""
+def _write_overlay_manifest(company_only_files_dir: Path, target_dir: Path) -> None:
+    """Write list of company-only files relative to ``target_dir``."""
     manifest = target_dir / ".overlay_manifest"
     lines = []
-    for root, _, files in os.walk(overlay_dir):
+    for root, _, files in os.walk(company_only_files_dir):
         for name in files:
             rel = Path(root) / name
-            rel = rel.relative_to(overlay_dir)
+            rel = rel.relative_to(company_only_files_dir)
             lines.append(str(rel))
     manifest.write_text("\n".join(lines), encoding="utf-8")
 
@@ -633,17 +647,20 @@ def _read_overlay_manifest(private_dir: Path) -> Optional[List[Path]]:
 
 
 def _remove_overlay(
-    public_dir: Path, template: Path, overlay: Path, overlay_files: Optional[Iterable[Path]] = None
+    public_dir: Path,
+    template: Path,
+    company_only_files: Path,
+    overlay_files: Optional[Iterable[Path]] = None,
 ) -> None:
-    """Remove files introduced by the overlay from ``public_dir``."""
+    """Remove files introduced by the company-only overlay from ``public_dir``."""
     if overlay_files is None:
-        if not overlay.exists():
+        if not company_only_files.exists():
             return
         overlay_files = []
-        for root, _, files in os.walk(overlay):
+        for root, _, files in os.walk(company_only_files):
             for name in files:
                 rel = Path(root) / name
-                rel = rel.relative_to(overlay)
+                rel = rel.relative_to(company_only_files)
                 overlay_files.append(rel)
 
     for rel in overlay_files:
@@ -730,11 +747,11 @@ def public_workflow(
         raise SystemExit("❌ Workflow validation failed")
 
     cfg = load_config(config_path)
-    temp_dir = Path(cfg.get('temp_dir', '.workflow-temp'))
-    template = Path(cfg.get('template', 'template'))
-    overlay = Path(cfg.get('overlay_dir', 'private-overlay'))
-    public_dir = temp_dir / 'public'
-    private_dir = temp_dir / 'private'
+    working_directory = Path(cfg.get('working_directory', '.workflow-temp'))
+    template_source_dir = Path(cfg.get('template_source_dir', 'template'))
+    company_only_files = Path(cfg.get('company_only_files', 'private-overlay'))
+    public_dir = working_directory / 'public'
+    private_dir = working_directory / 'private'
 
     rollback_id = None
     if not dry_run:
@@ -742,16 +759,16 @@ def public_workflow(
         try:
             if public_dir.exists():
                 shutil.rmtree(public_dir)
-            shutil.copytree(template, public_dir, symlinks=True)
+            shutil.copytree(template_source_dir, public_dir, symlinks=True)
             overlay_files = _read_overlay_manifest(private_dir)
-            _remove_overlay(public_dir, template, overlay, overlay_files)
+            _remove_overlay(public_dir, template_source_dir, company_only_files, overlay_files)
             validate_directory(public_dir)
             verify_files = (
-                [p for p in overlay_files if not (template / p).exists()]
+                [p for p in overlay_files if not (template_source_dir / p).exists()]
                 if overlay_files
                 else None
             )
-            if not verify_public_export(template, public_dir, verify_files):
+            if not verify_public_export(template_source_dir, public_dir, verify_files):
                 raise SystemExit('❌ Public export verification failed')
         except Exception:
             rollback_manager.rollback_to(rollback_id)

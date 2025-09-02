@@ -18,8 +18,8 @@ class MockGitHub:
 
 class MockGitRepository:
     """Mock git operations for predictable testing"""
-    def __init__(self, temp_dir: Path):
-        self.repo_dir = temp_dir
+    def __init__(self, working_directory: Path):
+        self.repo_dir = working_directory
         self.commits = []
         self.branches = {"main": None}
         self.current_branch = "main"
